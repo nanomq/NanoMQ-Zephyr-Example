@@ -28,6 +28,7 @@ Exit status 0 on success, 1 on failure.
 
 from __future__ import annotations
 
+import os
 import sys
 import threading
 import time
@@ -35,7 +36,16 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parents[1]
-CI_SCRIPTS = REPO_ROOT / ".github" / "scripts"
+
+# attack.py is not vendored: it comes from the nanomq checkout this repository
+# builds against (scripts/fetch-nanomq.sh puts it at extern/nanomq).
+# NANOMQ_ROOT overrides the location; the fallback keeps the script working
+# from inside a nanomq checkout, where the CI scripts sit at the repository
+# root.
+NANOMQ_ROOT = Path(os.environ.get("NANOMQ_ROOT", REPO_ROOT / "extern" / "nanomq"))
+CI_SCRIPTS = NANOMQ_ROOT / ".github" / "scripts"
+if not CI_SCRIPTS.is_dir():
+    CI_SCRIPTS = REPO_ROOT / ".github" / "scripts"
 
 ECHO_TOPIC = "zf/survival/alive"
 
