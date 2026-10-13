@@ -56,8 +56,8 @@ scripts/fetch-nanomq.sh
 ```
 
 脚本把 nanomq 克隆到 `extern/nanomq`（已 gitignore），并切到
-[`nanomq.ref`](nanomq.ref) 里记的版本 —— 当前是 nanomq `c8507485` 配 nng
-`98cd115e`，验证日期 2026-10-13。它只初始化 `nng` 子模块；nanomq 其余子模块对应
+[`nanomq.ref`](nanomq.ref) 里记的版本 —— 当前是 nanomq `bb70558a` 配 nng
+`3da6917f`，验证日期 2026-10-13。它只初始化 `nng` 子模块；nanomq 其余子模块对应
 的功能在示例里都是关闭的。
 
 * `scripts/fetch-nanomq.sh --ref <ref>` 换成别的版本做实验。

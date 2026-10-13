@@ -8,7 +8,11 @@
 # Bump REF when a newer nanomq is verified against the examples here, and update
 # VERIFIED.  NNG is informational — it is the nng submodule commit REF records,
 # which the fetch script checks out along with it.
+#
+# Current pair: the tip of nanomq's zephyr-rtos branch (the branch the port is
+# published on) as of VERIFIED, with the nng comment fix that the same day's
+# migration added.
 REPO=https://github.com/nanomq/nanomq.git
-REF=c8507485
-NNG=98cd115e
+REF=bb70558a
+NNG=3da6917f
 VERIFIED=2026-10-13

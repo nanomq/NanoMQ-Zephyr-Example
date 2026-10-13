@@ -59,7 +59,7 @@ scripts/fetch-nanomq.sh
 ```
 
 The script clones `extern/nanomq` (git-ignored) and checks out the revision in
-[`nanomq.ref`](nanomq.ref) — nanomq `c8507485` with nng `98cd115e` at the time
+[`nanomq.ref`](nanomq.ref) — nanomq `bb70558a` with nng `3da6917f` at the time
 of writing, verified 2026-10-13. It initializes only the `nng` submodule; the
 other nanomq submodules serve features the examples switch off.
 
