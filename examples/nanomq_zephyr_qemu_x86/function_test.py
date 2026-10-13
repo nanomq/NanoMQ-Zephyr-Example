@@ -60,7 +60,16 @@ sys.dont_write_bytecode = True
 
 HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parents[1]
-CI_SCRIPTS = REPO_ROOT / ".github" / "scripts"
+
+# The CI modules and survival_test.py are imported, not vendored, and they live
+# in the nanomq checkout this repository builds against (scripts/fetch-nanomq.sh
+# puts it at extern/nanomq).  NANOMQ_ROOT overrides the location; the fallback
+# keeps the runner working from inside a nanomq checkout, where the scripts are
+# at the repository root.
+NANOMQ_ROOT = Path(os.environ.get("NANOMQ_ROOT", REPO_ROOT / "extern" / "nanomq"))
+CI_SCRIPTS = NANOMQ_ROOT / ".github" / "scripts"
+if not CI_SCRIPTS.is_dir():
+    CI_SCRIPTS = REPO_ROOT / ".github" / "scripts"
 
 DEFAULT_ADDR = "127.0.0.1"           # qemu's SLIRP host forwards bind loopback
 DEFAULT_QEMU = "qemu-system-i386"    # taken from PATH
@@ -1021,8 +1030,10 @@ def main(argv=None) -> int:
 
     # ── prerequisites ────────────────────────────────────────────────
     if not CI_SCRIPTS.is_dir():
-        log("ERROR: %s not found — run this from a full nanomq checkout"
+        log("ERROR: %s not found — fetch the nanomq dependency first:"
             % CI_SCRIPTS)
+        log("       scripts/fetch-nanomq.sh")
+        log("       (or point NANOMQ_ROOT at a nanomq checkout)")
         return 2
     for mod in ("paho.mqtt.client", "requests"):
         try:
