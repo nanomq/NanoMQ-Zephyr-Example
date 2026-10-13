@@ -324,7 +324,7 @@ main(void)
 #ifdef CONFIG_BROKER_WS
 	// WebSocket listener (MQTT over RFC6455, paho's default path /mqtt).
 	// broker() listens on websocket.url verbatim — the CONF_WS_URL_DEFAULT
-	// fallback lives in the broker_start*() file path, which this demo
+	// fallback lives in the broker_start*() file path, which this example
 	// bypasses — so both fields must be set here.  TLS is compiled out of
 	// the Zephyr NanoNNG, so the wss: sibling listener stays inert.
 	nmq_conf->websocket.enable = true;
@@ -382,7 +382,7 @@ main(void)
 
 #if defined(ENABLE_LOG)
 	// Activate the nanolib log backend (console) and apply conf->log.level
-	// — broker_start_with_conf() normally does this, but the embedded demo
+	// — broker_start_with_conf() normally does this, but the embedded example
 	// calls broker() directly.
 	// nanomq's log_init() applies log->level and registers the console sink
 	// itself, since conf_init() defaults log.type to LOG_TO_CONSOLE.

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Raw-socket MQTT acceptance client for the Zephyr broker demo.
+"""Raw-socket MQTT acceptance client for the Zephyr broker example.
 
 Stdlib only (no paho in the container image).  Speaks MQTT 3.1.1 and 5.0
 at the packet level, which is enough to drive the acceptance scenarios in
-PORTING_ZEPHYR.md §9: pub/sub forwarding, webhook triggers, persistent
+the port's verification records: pub/sub forwarding, webhook triggers, persistent
 sessions / offline messages and keepalive expiry, $SYS client_status.
 
 Usage:

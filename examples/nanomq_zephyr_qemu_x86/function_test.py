@@ -84,7 +84,7 @@ REST_PORT = 8081
 WS_PORT = 8083
 WEBHOOK_PORT = 18080
 
-# The demos run the REST API with Basic auth (main.c sets auth_type=BASIC and
+# The examples run the REST API with Basic auth (main.c sets auth_type=BASIC and
 # fills in username/password — conf_http_server_init() leaves them NULL, and
 # basic_authorize() strlen()s both).  These match etc/nanomq.conf and the
 # upstream docs; override with --rest-user/--rest-pass.
@@ -428,7 +428,7 @@ def group_mqtt_v5(addr: str, env: dict) -> None:
 def group_rest_get(addr: str, env: dict) -> None:
     """REST surface, GET only.
 
-    POST /reload/ (and /write_file) mutate the running broker — the demo
+    POST /reload/ (and /write_file) mutate the running broker — the example
     has no config file to reload, so the suite stays on the read side.
     trust_env=False because the host shell may carry HTTP_PROXY, which
     would send these requests through a proxy that cannot reach the guest's
@@ -438,7 +438,7 @@ def group_rest_get(addr: str, env: dict) -> None:
 
     s = requests.Session()
     s.trust_env = False
-    # REST runs with Basic auth on both demos.
+    # REST runs with Basic auth on both examples.
     s.auth = (env.get("ZF_REST_USER", REST_USER),
               env.get("ZF_REST_PASS", REST_PASS))
     base = "http://%s:%d/api/v4" % (addr, REST_PORT)
@@ -446,14 +446,14 @@ def group_rest_get(addr: str, env: dict) -> None:
     # A port probe cannot answer whether the API is up: qemu's SLIRP host
     # forward accepts the TCP connection even when the guest has nothing on
     # 8081, then closes it.  Make one real request and treat a refused or
-    # closed connection as "this build leaves the API off" -- the demos now
+    # closed connection as "this build leaves the API off" -- the examples now
     # require CONFIG_BROKER_REST_USER/PASS to be set before it listens.
     # A 401 is not caught here: that is a credential mismatch worth failing.
     try:
         s.get(base + "/brokers/", timeout=10)
     except requests.ConnectionError:
         raise SkipGroup(
-            "no REST API on %s:%d — the demos leave it off until "
+            "no REST API on %s:%d — the examples leave it off until "
             "CONFIG_BROKER_REST_USER/PASS are set (local.conf); pass "
             "--rest-user/--rest-pass for a broker that has them"
             % (addr, REST_PORT))
@@ -534,7 +534,7 @@ def group_ws_abort(addr: str, env: dict) -> None:
 
     Handshake-then-close connections used to leak one net_context each and
     exhaust CONFIG_NET_MAX_CONTEXTS (32) after ~29 of them, which killed
-    every listener on the broker permanently — see PORTING_ZEPHYR.md §22-5.
+    every listener on the broker permanently.
     This group aborts well past that threshold, then proves all three
     listeners still serve.
     """
@@ -640,7 +640,7 @@ def group_ws_v5(addr: str, env: dict) -> None:
 def group_webhook_smoke(addr: str, env: dict) -> None:
     """Webhook forwarder: one CLIENT_CONNACK + one MESSAGE_PUBLISH event.
 
-    The demo's rules are CLIENT_CONNACK (all clients) and MESSAGE_PUBLISH on
+    The example's rules are CLIENT_CONNACK (all clients) and MESSAGE_PUBLISH on
     "hook/#".  The receiver runs right here: on qemu_x86 the broker POSTs to
     SLIRP's 10.0.2.2 alias, which *is* the machine running qemu; on a real
     board CONFIG_BROKER_WEBHOOK_URL points at this machine's LAN address.
@@ -654,7 +654,7 @@ def group_webhook_smoke(addr: str, env: dict) -> None:
     if not env.get("ZF_WEBHOOK"):
         raise SkipGroup(
             "broker webhook not declared — pass --webhook if it was built "
-            "with CONFIG_BROKER_WEBHOOK (off by default in both demos; set "
+            "with CONFIG_BROKER_WEBHOOK (off by default in both examples; set "
             "CONFIG_BROKER_WEBHOOK_URL — local.conf on a board, an overlay "
             "or webhook.conf on qemu_x86 — to turn the forwarder on)")
 
@@ -756,7 +756,7 @@ def group_capacity(addr: str, env: dict) -> None:
 
     Zephyr hands out one net_context/net_conn per socket; when the pool
     is exhausted its TCP answers with RST and paho reports a dropped
-    connection.  The demo's prj.conf sizes both pools to 32 — this group
+    connection.  The example's prj.conf sizes both pools to 32 — this group
     is the guard that keeps them sized (see README "Performance notes").
     """
     import paho.mqtt.client as mqtt
@@ -889,8 +889,7 @@ def run_worker(name: str, addr: str, args, timeout: float, attempts: int):
     """Run one group in a subprocess; returns (status, detail).
 
     The worker's output goes to a temporary *file*, not a pipe.  The CI
-    scripts leak mosquitto_sub processes on their failure paths (see
-    PORTING_ZEPHYR.md §22-3(e)) and those grandchildren inherit the
+    scripts leak mosquitto_sub processes on their failure paths, and those grandchildren inherit the
     worker's stdout; subprocess.run(capture_output=True) waits for the
     pipe to reach EOF rather than merely for the child to exit, so a
     single leaked subscriber made an already-failed group look hung for
@@ -950,7 +949,7 @@ def run_worker(name: str, addr: str, args, timeout: float, attempts: int):
         # Show this attempt's failure now: if a later attempt passes,
         # run_worker returns that attempt's output and this one's detail is
         # lost — exactly the evidence needed to tell a real defect from a
-        # flaky race (see PORTING_ZEPHYR.md §22-3(e)).
+        # flaky race.
         if attempt < attempts:
             log("    attempt %d/%d failed:" % (attempt, attempts))
             for line in last_out.rstrip().splitlines()[-25:]:
@@ -978,7 +977,7 @@ def parse_args(argv=None):
                     help="the broker under test has the webhook forwarder "
                          "enabled; run hook_receiver.py locally and expect "
                          "events.  Without it the webhook_smoke group skips "
-                         "(the demos leave it off; set "
+                         "(the examples leave it off; set "
                          "CONFIG_BROKER_WEBHOOK_URL to turn it on)")
     ap.add_argument("--qemu", default=DEFAULT_QEMU,
                     help="qemu-system-i386 to launch (default: %s)"
@@ -1115,14 +1114,14 @@ def main(argv=None) -> int:
 
     # Pick the hardware-tuned defaults.  The CI scripts' sleeps are tuned for a
     # localhost broker, and two of their subtests are racy by construction
-    # (PORTING_ZEPHYR.md §22-3(g)), so a board over Wi-Fi wants both a
+    # (see the port tutorial), so a board over Wi-Fi wants both a
     # stretched scale and a retry.  Deciding from a measured round trip beats
     # making every hardware run remember the flags; explicit flags always win.
     rtt = measure_connect_ms(addr)
     # A broker that is not on this machine is real hardware, whatever the
     # round trip says: wired Ethernet to a board measures well under
     # REMOTE_RTT_MS, but its CI-script timings still need the stretched scale
-    # and the retry (the qemu demos are loopback and keep the local values).
+    # and the retry (the qemu examples are loopback and keep the local values).
     remote = rtt >= REMOTE_RTT_MS or not _is_loopback(addr)
     explicit_scale = args.time_scale is not None
     explicit_retry = args.retry is not None
@@ -1152,7 +1151,7 @@ def main(argv=None) -> int:
                 # plainly rather than letting every later group fail for
                 # unrelated-looking reasons.  A dead broker is a real
                 # outcome on this board — the WebSocket listener collapses
-                # under repeated connects (PORTING_ZEPHYR.md §22-5).
+                # under repeated connects.
                 log("ERROR: broker at %s stopped answering before group %s "
                     "— aborting the rest.  If it died rather than being "
                     "stopped, the serial console has the crash."
@@ -1198,7 +1197,7 @@ def main(argv=None) -> int:
                     "subscriber needs ~1 s just to reach SUBACK, so the CI "
                     "scripts' fixed 1-2 s sleeps lose the race; re-run with "
                     "--time-scale 4 (usually also --retry 2) before "
-                    "suspecting the broker — PORTING_ZEPHYR.md §22-3(e).")
+                    "suspecting the broker.")
             if args.fail_fast:
                 log("--fail-fast: stopping")
                 break

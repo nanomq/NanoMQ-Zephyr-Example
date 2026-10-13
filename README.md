@@ -10,18 +10,18 @@ Three example applications that run the NanoMQ MQTT broker on Zephyr RTOS:
 
 Each example builds the NanoMQ broker core (`nanomq/`) and NanoNNG (the `nng/`
 fork with the Zephyr platform layer) for one target, with the same application
-source and the same CMake dependency walk. They differ in board support and in
+source and the same dependency resolution. They differ in board support and in
 the network layer.
 
-NanoMQ itself is not here. The port's narrative — why the broker core was
-adapted to Zephyr, what the platform layer answers, which framework traps came
-up — is written up in nanomq's own documentation:
+NanoMQ itself is not part of this repository. Why the broker core was changed,
+what the platform layer covers, and the framework-level problems met along the
+way are documented in nanomq's own docs:
 
 * [NanoMQ on Zephyr RTOS: Running an MQTT Broker Directly on an MCU](https://github.com/nanomq/nanomq/blob/zephyr-rtos/docs/en_US/tutorial/port-to-zephyr.md) ([中文](https://github.com/nanomq/nanomq/blob/zephyr-rtos/docs/zh_CN/tutorial/port-to-zephyr.md))
 * [Porting the Broker to the ART-Pi (STM32H750)](https://github.com/nanomq/nanomq/blob/zephyr-rtos/docs/en_US/tutorial/port-to-art-pi.md) ([中文](https://github.com/nanomq/nanomq/blob/zephyr-rtos/docs/zh_CN/tutorial/port-to-art-pi.md))
 
-This repository is the operational side: the applications, their board
-support, their flashing tools and the acceptance suite.
+This repository holds the runnable part: the applications, their board support,
+the flashing tools and the acceptance suite.
 
 ## Repository layout
 
@@ -39,9 +39,9 @@ support, their flashing tools and the acceptance suite.
 ## 1. Clone into a west workspace
 
 **This repository has to sit inside a Zephyr west workspace.** `west build`
-resolves the workspace from the application directory, so a clone outside one
-cannot build; `examples/nanomq_zephyr_stm32_art-pi/tools/flash.sh` says so
-explicitly rather than failing inside west.
+looks for the workspace upward from the application directory, so a checkout
+outside one cannot be built; `examples/nanomq_zephyr_stm32_art-pi/tools/flash.sh`
+reports that directly instead of letting west fail with a less clear error.
 
 ```sh
 cd ~/zephyrproject                                            # your west workspace
@@ -50,8 +50,8 @@ git clone https://github.com/nanomq/NanoMQ-Zephyr-Example.git
 
 ## 2. Fetch the nanomq dependency
 
-The examples compile the broker core and NanoNNG out of a nanomq checkout, so
-fetch it once before the first build:
+The examples build the broker core and NanoNNG from a nanomq checkout, so fetch
+the dependency once before the first build:
 
 ```sh
 cd ~/zephyrproject/NanoMQ-Zephyr-Example
@@ -59,61 +59,63 @@ scripts/fetch-nanomq.sh
 ```
 
 The script clones `extern/nanomq` (git-ignored) and checks out the revision in
-[`nanomq.ref`](nanomq.ref) — nanomq `bb70558a` with nng `3da6917f` at the time
-of writing, verified 2026-10-13. It initializes only the `nng` submodule; the
-other nanomq submodules serve features the examples switch off.
+[`nanomq.ref`](nanomq.ref), nanomq `bb70558a` with nng `3da6917f` at the time of
+writing, verified 2026-10-13. It initializes only the `nng` submodule; the other
+nanomq submodules are for features the examples switch off.
 
-* `scripts/fetch-nanomq.sh --ref <ref>` checks out something else, for an
+* `scripts/fetch-nanomq.sh --ref <ref>`: checks out a different revision for an
   experiment.
-* `west build … -DNANOMQ_ROOT=/path/to/nanomq` builds against any checkout you
-  already have — a worktree with edited nng sources, say — and skips the
-  script entirely.
+* `west build … -DNANOMQ_ROOT=/path/to/nanomq`: builds against an existing
+  checkout (a worktree with edited nng sources, for example) and does not need
+  the script.
 
-To bump the pin later, change `REF` in `nanomq.ref`, re-run the script, re-run
-the functional suite, and update `VERIFIED`.
+To bump the pin later: change `REF` in `nanomq.ref`, re-run the script and the
+functional suite, and update `VERIFIED`.
 
 ## 3. Environment
 
-The full setup, with the versions used for validation, is in the
+The full setup and the versions used for validation are in the
 [port tutorial](https://github.com/nanomq/nanomq/blob/zephyr-rtos/docs/en_US/tutorial/port-to-zephyr.md#environment-setup).
-In short:
+The essentials:
 
-* **Zephyr 4.4+ west workspace with its Python virtual environment** (provides
-  `west` and Zephyr's Python dependencies), and **Zephyr SDK 1.0.x**:
+* Zephyr 4.4+ west workspace and its Python virtual environment (provides `west`
+  and Zephyr's Python dependencies), plus Zephyr SDK 1.0.x:
 
   ```sh
   source ~/zephyr-venv/bin/activate              # wherever your venv lives
   export ZEPHYR_SDK_INSTALL_DIR=$HOME/zephyr-sdk-1.0.1
   ```
 
-* **For the ESP32-S3 example only**, an ESP-IDF environment for `esptool` and
-  the HAL blobs; `west blobs fetch hal_espressif` once, or Wi-Fi silently
-  disappears. The compiler still comes from the Zephyr SDK.
-* **For the ART-Pi example**, three out-of-tree patches and
-  `west blobs fetch hal_infineon`; see [its README](examples/nanomq_zephyr_stm32_art-pi/README.md).
-* **For `qemu_x86`**, a two-line patch to Zephyr's e1000 driver. It is
-  **required**: without it the broker starts and prints its banner, but no
-  client can connect, because the emulated adapter drops broadcast frames. The
-  diff is in [the qemu README](examples/nanomq_zephyr_qemu_x86/README.md) and
-  in the port tutorial; apply it to the `zephyr/` tree of your workspace.
+* For the ESP32-S3 example only: an ESP-IDF environment for `esptool` and the
+  HAL blobs, and `west blobs fetch hal_espressif` once; without the blobs Wi-Fi
+  silently becomes unavailable. The compiler still comes from the Zephyr SDK.
+* For the ART-Pi example: three out-of-tree patches and
+  `west blobs fetch hal_infineon`; see [that example's README](examples/nanomq_zephyr_stm32_art-pi/README.md).
+* For `qemu_x86`: a two-line patch to Zephyr's e1000 driver. It is **required**;
+  without it the broker still starts and prints its banner, but no client can
+  connect, because the emulated adapter drops broadcast frames. The diff is in
+  [the qemu example's README](examples/nanomq_zephyr_qemu_x86/README.md) and in
+  the port tutorial; apply it to the `zephyr/` tree of your workspace.
 
 ## 4. Build and run
 
-Run everything from the repository root (`~/zephyrproject/NanoMQ-Zephyr-Example`),
-which is inside the workspace. Each example's README carries the full procedure;
-the short version:
+Run the commands below from the repository root
+(`~/zephyrproject/NanoMQ-Zephyr-Example`), which is inside the workspace. Each
+example's README carries the full procedure.
 
-### qemu_x86 — the fast one
+### qemu_x86
 
 ```sh
 west build -b qemu_x86 -d build/nanomq_zephyr_qemu_x86 examples/nanomq_zephyr_qemu_x86
 west build -d build/nanomq_zephyr_qemu_x86 -t run      # serial console on stdio
 ```
 
-`-t run` forwards the broker's ports to `127.0.0.1` and occupies the terminal.
-For background runs with the console in a file, [the qemu README](examples/nanomq_zephyr_qemu_x86/README.md)
-has the explicit `qemu-system-i386` line and the cleanup command for leftover
-instances. Start here when you develop: a build-and-run cycle takes seconds.
+`-t run` forwards the broker's ports to `127.0.0.1` and occupies the current
+terminal. For background runs with the serial output written to a file,
+[the qemu example's README](examples/nanomq_zephyr_qemu_x86/README.md) gives the
+full `qemu-system-i386` command and the command that clears leftover instances.
+Start with this example during development: a build-and-run cycle takes only
+seconds.
 
 ### ESP32-S3
 
@@ -134,9 +136,9 @@ examples/nanomq_zephyr_stm32_art-pi/tools/flash.sh --wifi
 examples/nanomq_zephyr_stm32_art-pi/tools/console.sh
 ```
 
-`flash.sh` builds and programs in one step (the image lives in the QSPI window,
-behind the board's factory bootloader, so a bare `west build` is not enough),
-and `--wifi` is the verified variant.
+`flash.sh` builds and programs in one step (the image has to live in the QSPI
+window, behind the board's factory bootloader, so an image from `west build`
+alone is not usable); `--wifi` is the verified variant.
 
 ## 5. Ports and services
 
@@ -151,8 +153,8 @@ All three examples expose the same services:
 The REST listener starts only when `CONFIG_BROKER_REST_USER` and
 `CONFIG_BROKER_REST_PASS` are set to credentials of your own: both default to
 the empty string, and the published `admin` / `public` pair is refused. Leave
-them unset and the port stays closed — the suite then reports its `rest_get`
-group as SKIP rather than failing.
+them unset and the port stays closed; the suite then reports its `rest_get` group
+as SKIP rather than failing.
 
 ## 6. Security
 
@@ -188,11 +190,11 @@ localhost-tuned sleeps need. The ART-Pi example's
 [tutorial](https://github.com/nanomq/nanomq/blob/zephyr-rtos/docs/en_US/tutorial/port-to-zephyr.md#functional-testing)
 lists the Python dependencies the suite needs.
 
-## 8. What this port does not have
+## 8. Capabilities this port does not provide or has not verified
 
 The Zephyr port is not an equivalent replacement for general NanoMQ. The
-broker's peripheral features are compiled in and controlled at runtime, but
-several capabilities are unavailable or unverified on this platform:
+broker's peripheral features are compiled in and controlled at runtime, but the
+following capabilities are unavailable or unverified on this platform:
 
 | Capability | Status | Future plan |
 | --- | --- | --- |
@@ -205,12 +207,13 @@ several capabilities are unavailable or unverified on this platform:
 | IPC transport (`nanomq ctl`) | Off; Zephyr has only anonymous `socketpair` | **Pending platform support** |
 | QUIC | Not included (depends on msquic) | **Not planned** |
 
-Two more limits are worth knowing: the thread budget is fixed (taskq 2, poller
-1, expire 1, with `CONFIG_POSIX_THREAD_THREADS_MAX=16` and 16 KB stacks), and
-the broker's `process.c` cannot be compiled on Zephyr — each example provides
-the same symbol stub in its place. The port is based on NanoMQ 0.25.6, that is
-upstream `master`, and reads its configuration from built-in defaults plus
-startup code rather than from `nanomq.conf`.
+Two further limits apply: the thread budget is fixed (taskq 2, poller 1, expire
+1, with `CONFIG_POSIX_THREAD_THREADS_MAX=16` and 16 KB stacks), and the broker's
+`process.c` cannot be compiled on Zephyr, so each example provides an equivalent
+symbol stub. The port tracks upstream `master`, and the pinned revision carries
+NanoMQ 0.25.7, one development version past the 0.25.6 release the bring-up
+records were taken on. Configuration comes from built-in defaults plus startup
+code rather than from `nanomq.conf`.
 
 ## 9. Comparing the examples
 
@@ -223,15 +226,15 @@ startup code rather than from `nanomq.conf`.
 | **Additional prerequisite** | Wi-Fi credentials, ESP-IDF for flashing, Espressif blobs | Wi-Fi credentials, three out-of-tree patches, Infineon blobs | Zephyr e1000 driver patch |
 | **Typical use** | Real-world evaluation and hardware testing | Real-world evaluation on ARM; a reference for board bring-up | Quick verification during development |
 
-For development, `qemu_x86` is the one to start with. For real-world
-evaluation, use the board you have: the ESP32-S3 is the longer-established
-target, and the ART-Pi shows the same port on an ARM Cortex-M7 with a different
-flash layout, radio path and bring-up traps of its own.
+For development, start with `qemu_x86`; for evaluation on hardware, use the
+board at hand. The ESP32-S3 is the longer-established target, while the ART-Pi
+validates the same port on an ARM Cortex-M7, with a different flash layout,
+radio path and bring-up issues.
 
 ## Links
 
 * [The port tutorial](https://github.com/nanomq/nanomq/blob/zephyr-rtos/docs/en_US/tutorial/port-to-zephyr.md) and [the ART-Pi article](https://github.com/nanomq/nanomq/blob/zephyr-rtos/docs/en_US/tutorial/port-to-art-pi.md), in nanomq's docs
-* [nanomq/NanoNNG](https://github.com/nanomq/NanoNNG) — the nng fork with the Zephyr platform layer
+* [nanomq/NanoNNG](https://github.com/nanomq/NanoNNG), the nng fork with the Zephyr platform layer
 * [Decisions about this repository](docs/adr/) and [the vocabulary](GLOSSARY.md)
 * [NanoMQ community discussions](https://github.com/nanomq/nanomq/discussions)
 

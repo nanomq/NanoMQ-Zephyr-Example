@@ -158,7 +158,7 @@ net_event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_event,
 //
 // CONFIG_NET_CONFIG_SETTINGS is deliberately not enabled: that module's
 // AUTO_INIT defaults to y and would run a SYS_INIT hook configuring a static
-// address before the interface exists (the ESP32-S3 demo's §22-4 trap).
+// address before the interface exists (the ESP32-S3 example's §22-4 trap).
 //
 #define ETH_LINK_TIMEOUT_S  30
 #define ETH_DHCP_TIMEOUT_S  15
@@ -337,7 +337,7 @@ static const char *const sntp_servers[] = {
 // reachable the broker still starts, just with the wrong clock.  Rolled by
 // hand rather than using Zephyr's net_init_clock_via_sntp() because that
 // lives in the net_config directory, which is only added to the build by
-// CONFIG_NET_CONFIG_SETTINGS — the module this demo deliberately avoids
+// CONFIG_NET_CONFIG_SETTINGS — the module this example deliberately avoids
 // (see ethernet_dhcp_wait()).
 static void
 seed_realtime_from_sntp(void)
@@ -604,7 +604,7 @@ wifi_sta_bringup(void)
 	 * layer-code field of mask vs event (subsys/net/ip/net_mgmt.c
 	 * mgmt_run_slist_callbacks), so OR'ing events from different
 	 * layer-codes into one mask silently drops every delivery.  These stay
-	 * registered for the life of the demo: the supervisor needs them. */
+	 * registered for the life of the example: the supervisor needs them. */
 	net_mgmt_init_event_callback(&wifi_connect_cb, wifi_mgmt_event_handler,
 	    NET_EVENT_WIFI_CONNECT_RESULT);
 	net_mgmt_add_event_callback(&wifi_connect_cb);
@@ -756,7 +756,7 @@ main(void)
 #ifdef CONFIG_BROKER_WS
 	// WebSocket listener (MQTT over RFC6455, paho's default path /mqtt).
 	// broker() listens on websocket.url verbatim — the CONF_WS_URL_DEFAULT
-	// fallback lives in the broker_start*() file path, which this demo
+	// fallback lives in the broker_start*() file path, which this example
 	// bypasses — so both fields must be set here.  TLS is compiled out of
 	// the Zephyr NanoNNG, so the wss: sibling listener stays inert.
 	nmq_conf->websocket.enable = true;
@@ -814,7 +814,7 @@ main(void)
 
 #if defined(ENABLE_LOG)
 	// Activate the nanolib log backend (console) and apply conf->log.level —
-	// broker_start_with_conf() normally does this, but the embedded demo
+	// broker_start_with_conf() normally does this, but the embedded example
 	// calls broker() directly.
 	//
 	// nanomq's log_init() (mqtt_api.c) applies log->level and registers the

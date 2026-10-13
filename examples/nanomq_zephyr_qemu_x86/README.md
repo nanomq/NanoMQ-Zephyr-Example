@@ -7,8 +7,8 @@ host MQTT clients (mosquitto) can reach the broker.
 
 Protocol support is the standard NanoMQ TCP/WebSocket surface: MQTT
 v3.1.1 and v5, QoS 0/1/2, retained messages, will messages, $SYS, and the
-`nmq-tcp://`/`nmq-ws://` transports — no TLS, no QUIC, no SQLite (built
-out of the NanoNNG library, same as the NanoNNG Zephyr port itself).
+`nmq-tcp://`/`nmq-ws://` transports; no TLS, no QUIC, no SQLite (built out of
+the NanoNNG library, as in the NanoNNG Zephyr port itself).
 
 ## What was needed to get here
 
@@ -18,24 +18,24 @@ Three layers of changes, kept apart deliberately:
 |---|---|---|
 | NanoNNG port | already Zephyr-ready (branch `develop`, no TLS/Parquet) | `nng/` submodule |
 | NanoMQ core | POSIX-only bits gated behind `__ZEPHYR__`: signal handlers in `apps/broker.c`, `ptrace.h` in `nanomq.c`, `W_OK` file-log check in `mqtt_api.c` | this repo |
-| broker bug fix | `nano_nni_lmq_fini`/`nano_nni_lmq_resize` freed the in-struct `lmq_buf` when the rlmq never grew (guard `lmq_alloc > 0`, mirroring `core/lmq.c`) — heap corruption on client disconnect on Zephyr | `nng/` submodule (commit in this branch) |
-| Demo | this directory | `examples/nanomq_zephyr_qemu_x86` |
+| broker bug fix | `nano_nni_lmq_fini`/`nano_nni_lmq_resize` freed the in-struct `lmq_buf` when the rlmq never grew (guard `lmq_alloc > 0`, mirroring `core/lmq.c`); heap corruption on client disconnect on Zephyr | `nng/` submodule (commit in this branch) |
+| Example | this directory | `examples/nanomq_zephyr_qemu_x86` |
 
 The one POSIX-only piece nng itself cannot build on Zephyr is the
-broker's `process.c` (fork/kill/chdir) — a small app-side stand-in
+broker's `process.c` (fork/kill/chdir); a small app-side stand-in
 ([src/process_stub.c](src/process_stub.c)) provides its symbols.  The
-NanoNNG no-FS file gap this demo originally papered over
+NanoNNG no-FS file gap this example originally papered over
 (`nni_plat_file_exists/size` missing from `zephyr_file.c`, which broke
 linking `nanolib`'s file.c/log.c) is fixed in the submodule instead:
 both `zephyr_file.c` branches now implement the probes (commit
-`21daab5`), exposed as a public API — `nng_file_exists` /
+`21daab5`), exposed as a public API: `nng_file_exists` /
 `nng_file_size` in `nng.h` (commit `c66e0cb`).
 
-## Environment prerequisite — Zephyr e1000 driver patch
+## Environment prerequisite: Zephyr e1000 driver patch
 
 **Required.** The qemu_x86 emulated NIC is an Intel e1000.  QEMU's e1000
-device model clears RCTL after reset — including **RCTL_BAM** (Broadcast
-Accept Mode, bit 15), which real hardware defaults to set.  Zephyr's
+device model clears RCTL after reset, including **RCTL_BAM** (Broadcast
+Accept Mode, bit 15), which real hardware leaves set by default.  Zephyr's
 `eth_e1000` driver programs `RCTL_EN | RCTL_MPE` but never sets BAM, so
 **all broadcast frames (ARP!) are silently dropped by the device model**
 and SLIRP cannot deliver the first TCP connection (no ARP resolution).
@@ -53,43 +53,35 @@ iow32(dev, RCTL, RCTL_EN | RCTL_MPE | RCTL_BAM | DT_INST_PROP(inst, rdmts) << RD
 
 ## Build
 
-Needs a Zephyr 4.x SDK workspace with the NanoNNG submodule checked out and
-the e1000 patch above applied.  `west` comes from that workspace's python
-venv, not from the system `PATH`, so activate it first — the ESP32-S3 demo
-gets `west` from ESP-IDF instead, this one does not need ESP-IDF at all:
+Needs a Zephyr 4.x SDK workspace, the e1000 patch above applied, and the
+nanomq dependency fetched once (see the repository README).  `west` comes from
+that workspace's python venv, not from the system `PATH`, so activate it first;
+the ESP32-S3 example gets `west` from ESP-IDF instead, this one does not need
+ESP-IDF at all:
 
 ```sh
 source <workspace>/.venv/bin/activate
 export ZEPHYR_SDK_INSTALL_DIR=$HOME/zephyr-sdk-1.0.1
 ```
 
-From the repo root:
+From the repository root:
 
 ```sh
-git submodule update --init nng
+scripts/fetch-nanomq.sh
 west build -b qemu_x86 -d build/nanomq_zephyr_qemu_x86 examples/nanomq_zephyr_qemu_x86
 ```
 
-> **NanoNNG dependency.**  The `nng` gitlink recorded in this PR is still
-> the existing upstream pin, and that commit does **not** carry the Zephyr
-> platform layer — that half of the port lives on the NanoNNG side
-> (NanoNNG PR #1647).  Until it lands and the pin is bumped, a fresh
-> checkout has to point the submodule at the branch explicitly, or the
-> build fails in `nanonng_build` with a missing `platform/zephyr/`:
->
-> ```sh
-> git -C nng fetch origin alvin/zephyr-port
-> git -C nng checkout alvin/zephyr-port
-> ```
->
-> Bumping the pin is deliberately left to the nanomq maintainers rather
-> than being folded into this PR.
+> **NanoNNG dependency.**  The `nng` submodule of the fetched nanomq checkout
+> carries the Zephyr platform layer (`src/platform/zephyr/`), which the build
+> compiles through the same ExternalProject the other examples use.  The
+> revision is pinned in `nanomq.ref`; `-DNANOMQ_ROOT=<path>` builds against a
+> checkout of your own instead.
 
 The NanoNNG library is built by an ExternalProject
 ([examples/cmake/nanonng_external.cmake](../cmake/nanonng_external.cmake))
 into `<build-dir>/nanonng_build/`, mirroring the NanoNNG `zephyr_mqtt`
-demo's build.  RAM footprint of the linked image: ~2.5 MB of the qemu_x86
-31 MB RAM (≈1 MB of it the libc malloc arena — see below).
+example's build.  RAM footprint of the linked image: ~2.5 MB of the qemu_x86
+31 MB RAM (≈1 MB of it is the libc malloc arena; see below).
 
 ### Why the big malloc arena
 
@@ -120,14 +112,14 @@ qemu-system-i386 -m 32 -cpu qemu32,+nx,+pae,sse,sse2,pni -machine q35 \
 
 `qemu-system-i386` is not provided by Zephyr itself: `-t run` locates it in
 the Zephyr SDK's hosttools, so when launching by hand make sure it is on
-`PATH` — a distribution package (Fedora's `qemu-system-x86`) works too.
+`PATH`; a distribution package (Fedora's `qemu-system-x86`) works too.
 
-**Confirm the broker came up** — within a second or two the log shows the
+**Confirm the broker came up**: within a second or two the log shows the
 interface address, the HTTP/REST listener and the broker banner.  Log
 timestamps are real wall-clock (UTC): at boot, main.c seeds Zephyr's
 CLOCK_REALTIME from the QEMU-emulated CMOS RTC (QEMU initialises it from
-the host clock; without this the nanolib log module — log.c formats
-`time(NULL)` — would print the 1970 epoch):
+the host clock; without this the nanolib log module (log.c formats
+`time(NULL)`) would print the 1970 epoch):
 
 ```
 $ tail -f /tmp/qemu.log
@@ -138,12 +130,13 @@ net: ipv4 10.0.2.15
 NanoMQ Broker is started successfully!
 ```
 
-This CMOS seeding is **deliberately qemu-only**.  The sibling ESP32-S3 demo
+This CMOS seeding is **deliberately qemu-only**.  The sibling ESP32-S3 example
 ([../nanomq_zephyr_esp32s3](../nanomq_zephyr_esp32s3/)) has no RTC at all
 and seeds the same clock over SNTP instead.  Do not "fix" the difference by
 enabling SNTP here: its auto-init path runs from `SYS_INIT`, i.e. *before*
-the CMOS seed in `main()`, so CMOS would simply overwrite the SNTP result —
-extra boot latency, no effect.  Rationale in PORTING_ZEPHYR.md §22-4.
+the CMOS seed in `main()`, so CMOS would simply overwrite the SNTP result:
+extra boot latency, no effect.  The time-source options are compared in
+[the port tutorial](https://github.com/nanomq/nanomq/blob/zephyr-rtos/docs/en_US/tutorial/port-to-zephyr.md)'s Appendix A.
 
 The guest broker listens on `10.0.2.15:1883` (static IP set in
 [prj.conf](prj.conf)); SLIRP forwards host `tcp:1883` to it.  Pick a
@@ -157,8 +150,8 @@ qemu-system-i386: ... Could not set up host forwarding rule 'tcp:127.0.0.1:8083-
 ```
 
 `-t run` is the usual source of one: stopping it does not necessarily take
-the qemu it spawned with it.  Kill by port rather than by name — a
-`pkill -f "qemu-system-i386"` matches its own command line:
+the qemu it spawned with it.  Kill by port rather than by name; a
+`pkill -f "qemu-system-i386"` also matches its own command line:
 
 ```sh
 ss -ltnp | grep -E ':(1883|8081|8083)' | grep -oP 'pid=\K[0-9]+' | sort -u | xargs -r kill
@@ -188,13 +181,13 @@ Mosquitto clients against the forwarded port:
 ```
 
 Covers QoS0/1/2 pub/sub, retained messages, will messages (client
-SIGKILLed — note mosquitto rejects `-k < 5`), MQTT v5 pub/sub with
+SIGKILLed; note mosquitto rejects `-k < 5`), MQTT v5 pub/sub with
 user-properties and the response-topic/correlation-data roundtrip.
 Expect `RESULT: pass=7 fail=0`.
 
 Notes from bring-up that are easy to trip on again:
 
-* mosquitto `-k` (keepalive) minimum is **5** — `-k 2` makes the client
+* mosquitto `-k` (keepalive) minimum is **5**; `-k 2` makes the client
   exit immediately without connecting.
 * A SIGKILLed client's will is only published when the broker sees the
   socket close; `kill -9` the client itself, not a `timeout` wrapper
@@ -203,10 +196,10 @@ Notes from bring-up that are easy to trip on again:
 ## Extended scenarios (session / keepalive / $SYS / REST / webhook)
 
 The acceptance script above covers the protocol surface; the scenarios
-below (verification record: `PORTING_ZEPHYR.md` §9-4/6/7/10) need packet
+below need packet
 control the mosquitto CLI does not give you (clean=0 without auto-reconnect,
 MQTT 5 session-expiry, arbitrary keepalive), so they are driven by
-[`mqtt_accept.py`](mqtt_accept.py) — a stdlib-only raw-socket MQTT 3.1.1/5
+[`mqtt_accept.py`](mqtt_accept.py), a stdlib-only raw-socket MQTT 3.1.1/5
 client with machine-friendly `CONNACK/SUBACK/MSG/MATCH/EXIT` output.  It is
 stdlib-only, so it runs anywhere python3 does:
 
@@ -231,9 +224,9 @@ python3 mqtt_accept.py 127.0.0.1 1883 expect --topic '$SYS/brokers/client_status
     --expect online --expect offline --hold 20
 ```
 
-These need the demo's default build flags (`CONFIG_BROKER_REST_API`,
+These need the example's default build flags (`CONFIG_BROKER_REST_API`,
 `CONFIG_BROKER_WEBHOOK`, `CONFIG_BROKER_LOG_DEBUG`); the REST and webhook
-switches were added on top of the original demo to make the §9-4 path
+switches were added on top of the original example to make the §9-4 path
 exercisable (Kconfig options wired to main.c overrides, see
 [Kconfig](Kconfig)).  The broker also overrides `qos_duration` to 1 s
 (conf default 10 s) so keepalive/session-expiry checks tick promptly.
@@ -243,10 +236,10 @@ in [prj.conf](prj.conf))
 behind **Basic auth**.  The listener stays **off until you set
 `CONFIG_BROKER_REST_USER` / `CONFIG_BROKER_REST_PASS`** to credentials of
 your own: they have no default, and the published `admin`/`public` pair from
-`etc/nanomq.conf` is refused rather than accepted — see
+`etc/nanomq.conf` is refused rather than accepted: see
 [local.conf.example](local.conf.example) and pass the file to `west build`.
-Note this is base64 over plain HTTP, not encryption — TLS is not in the
-Zephyr NanoNNG build — and the host forward is bound to loopback:
+Note this is base64 over plain HTTP, not encryption (TLS is not in the Zephyr
+NanoNNG build), and the host forward is bound to loopback:
 
 ```sh
 curl -s -u <user>:<pass> http://127.0.0.1:8081/api/v4/clients  # key is "data"
@@ -258,9 +251,9 @@ without them the `rest_get` group skips rather than failing.
 Webhook is **off by default** here too (the two `CONFIG_BROKER_WEBHOOK*`
 lines in [prj.conf](prj.conf) are commented out).  The `CLIENT_CONNACK` rule
 fires on every client connect, so leaving the forwarder on with no receiver
-listening costs a failed HTTP attempt plus two log lines per connect — that
-measurably perturbs the suite's timing-sensitive subtests
-(PORTING_ZEPHYR.md §22-6).  Turn it on only when you want to exercise it:
+listening costs a failed HTTP attempt plus two log lines per connect, which
+measurably perturbs the suite's timing-sensitive subtests.
+Turn it on only when you want to exercise it:
 
 ```sh
 # uncomment CONFIG_BROKER_WEBHOOK / CONFIG_BROKER_WEBHOOK_URL in prj.conf,
@@ -270,9 +263,9 @@ west build -b qemu_x86 -d build/nanomq_zephyr_qemu_x86 examples/nanomq_zephyr_qe
 ```
 
 The URL matters, not the `BROKER_WEBHOOK` bool: main.c enables the forwarder
-only when it is non-empty, so an empty URL is how the demo keeps it off.
-Events are POSTed to the QEMU-host alias `10.0.2.2` — the machine running
-qemu itself — so the receiver runs **on that machine** (no container
+only when it is non-empty, so an empty URL is how the example keeps it off.
+Events are POSTed to the QEMU-host alias `10.0.2.2` (the machine running
+qemu itself), so the receiver runs **on that machine** (no container
 round-trip).  To watch events by hand, start it before publishing to
 `hook/#`:
 
@@ -285,8 +278,8 @@ own receiver and needs port 18080 to itself, and it will refuse to run if
 something is already listening there (the broker's target URL is a build-time
 setting, so the port cannot be moved out of the way).
 
-One event per connect (`client_connack` — clientid, proto_ver, keepalive)
-and one per `hook/#` publish (`message_publish` — ts, topic, qos, payload):
+One event per connect (`client_connack`: clientid, proto_ver, keepalive) and
+one per `hook/#` publish (`message_publish`: ts, topic, qos, payload):
 
 ```
 {"proto_ver": 4, "keepalive": 30, "conn_ack": "success", "username": "undefined", "clientid": "zf-webhook-pub", "action": "client_connack"}
@@ -309,10 +302,10 @@ started" banner is a DEBUG-level line the board builds do not emit).
 ## Functional test suite (`function_test.py`)
 
 [`function_test.py`](function_test.py) is the host-side end-to-end suite for
-this demo: it starts qemu itself (the same command as "Run" above, fresh
+this example: it starts qemu itself (the same command as "Run" above, fresh
 serial log, waits for the broker banner), runs the groups below, and stops
 the broker again.  It is the Zephyr counterpart of
-`.github/scripts/test.py`, which cannot run here — that runner needs a host
+`.github/scripts/test.py`, which cannot run here: that runner needs a host
 nanomq binary with TLS/WS listeners and drives host-only tooling
 (mosquitto CLI, TLS, auth).
 
@@ -329,17 +322,17 @@ python3 examples/nanomq_zephyr_qemu_x86/function_test.py --list           # grou
 |---|---|---|
 | `mqtt_v311` | sessions, retain, v4/v5 interop | CI `mqtt_test.py` |
 | `mqtt_v5` | session expiry, user properties, `$share`, topic alias | CI `mqtt_test_v5.py` |
-| `rest_get` | REST GET surface on :8081 — 7 routes, plus `/configuration/websocket` mirroring the runtime WS conf | self-written |
+| `rest_get` | REST GET surface on :8081: 7 routes, plus `/configuration/websocket` mirroring the runtime WS conf | self-written |
 | `ws_v311` | MQTT 3.1.1 over `nmq-ws://` on :8083 | CI `ws_test.py` |
-| `ws_v5` | MQTT 5 over WS — properties, topic alias, session expiry | CI `ws_v5_test.py` |
-| `webhook_smoke` | `hook_receiver.py` receives `client_connack` + `message_publish` — needs `--webhook`, else SKIP | self-written |
-| `capacity` | 12 concurrent CONNECTs + a QoS1 echo — regression for the connection-pool limit above | self-written |
-| `ws_abort` | 60 handshake-then-close ws connections, then a real MQTT-over-WS session — guards the accept-path leak (PORTING_ZEPHYR.md §22-5) | self-written |
+| `ws_v5` | MQTT 5 over WS: properties, topic alias, session expiry | CI `ws_v5_test.py` |
+| `webhook_smoke` | `hook_receiver.py` receives `client_connack` + `message_publish`: needs `--webhook`, else SKIP | self-written |
+| `capacity` | 12 concurrent CONNECTs + a QoS1 echo: regression for the connection-pool limit above | self-written |
+| `ws_abort` | 60 handshake-then-close ws connections, then a real MQTT-over-WS session: guards the accept-path leak | self-written |
 | `survival` | scaled-down `attack.py` load/session churn + post-churn echo probe | [`survival_test.py`](survival_test.py) |
 
 How the CI modules are reused without touching them: every group runs in its
 own subprocess (`--worker`), and the wrapper injects the broker address
-through each module's own seam — `g_addr`/`g_port`/`g_url` for the mqtt
+through each module's own seam: `g_addr`/`g_port`/`g_url` for the mqtt
 modules, a wrapped `Test.init` for `ws_test.py`, and
 `paho.mqtt.client.Client.connect` for `ws_v5_test.py` (which hardcodes
 `localhost:8083`).  The address reaches the subprocess via `ZF_ADDR`.
@@ -348,30 +341,29 @@ Notes from bring-up:
 
 * The `.github/scripts/ws_v5_test.py` copy this tree carried was stale: it
   set `MaximumPacketSize` (a CONNECT-only property) on the PUBLISH
-  properties, which paho 2.x rejects in the client thread — every v5
+  properties, which paho 2.x rejects in the client thread; every v5
   publisher died before it connected.  The file here is now upstream
   master's version, which also bounds its waits instead of sleeping blindly.
 * The ws groups get one extra attempt by default (`--retry-ws`):
   `ws_v5_test.py` uses fixed sleeps tuned for a host broker, and SLIRP
-  latency can make the first pass flaky.  Real jitter is recorded in
-  `PORTING_ZEPHYR.md` §9-13, not papered over.
+  latency can make the first pass flaky.  Real jitter is left visible rather than
+  papered over.
 * `survival_test.py` scales `attack.py`'s constants down (30 s, 2 flood
   publishers, 8 noise clients, 2-node share groups): the point is broker
   liveness under churn on qemu, not throughput.  Host-side scale is a crash
-  amplifier — SLIRP forwards roughly 9 msg/s per connection.
+  amplifier: SLIRP forwards roughly 9 msg/s per connection.
 * Exit status: `0` all groups pass, `1` at least one failed, `2` structural
   failure (qemu/module prerequisites).  A failing group prints its last 40
   output lines plus the serial-log tail.
 
-Verification record: `PORTING_ZEPHYR.md` §9-13.
 
 ## Performance notes (qemu/SLIRP)
 
-Best-effort numbers (see PORTING_ZEPHYR.md §9-10 for the record):
+Best-effort numbers:
 
 * QoS0 one-way forwarding reaches ~1.1-1.4 k msg/s with zero loss.
 * Request/response exchanges (QoS1 PUBACK, PINGREQ, SUBACK) cost a flat
-  ~110 ms each — Zephyr's TCP delayed-ACK (`ACK_DELAY = K_MSEC(100)`)
+  ~110 ms each: Zephyr's TCP delayed-ACK (`ACK_DELAY = K_MSEC(100)`)
   holds the ACK for ~100 ms on small segments.  This is a stack
   characteristic, not a broker defect; QoS0 one-way throughput is
   unaffected.
@@ -393,7 +385,7 @@ Best-effort numbers (see PORTING_ZEPHYR.md §9-10 for the record):
 
   A second, unrelated pool bites load tests: Zephyr allocates pthread
   **rwlocks** from a fixed pool and nanolib takes one per topic-tree node
-  (`dbtree_node_new`/`dbtree_node_free`, `nanolib/mqtt_db.c` — paired, so
+  (`dbtree_node_new`/`dbtree_node_free`, `nanolib/mqtt_db.c`, paired, so
   the live count tracks distinct subscribed topics).  The default 32 is
   enough for the listeners but not for a flood over many topics: the
   survival group reached `panic: pthread_rwlock_init: pool exhausted` at

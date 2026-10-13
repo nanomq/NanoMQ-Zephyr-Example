@@ -7,34 +7,34 @@ ESP32-S3-WROOM-1-N16R16V module (16 MB flash + 16 MB octal PSRAM).
 
 Sibling of [examples/nanomq_zephyr_qemu_x86](../nanomq_zephyr_qemu_x86/) (qemu_x86): same app
 sources and NanoNNG ExternalProject build, different board/networking
-layer.  Feature surface here matches the qemu demo: MQTT over TCP (:1883) +
+layer.  Feature surface here matches the qemu example: MQTT over TCP (:1883) +
 REST API (:8081, Basic auth `admin`/`public`) + MQTT over WebSocket
 (:8083/mqtt), plus an optional webhook forwarder.  The DEBUG log stays off.
 
 ## Board target
 
-ESP32-S3-LCD-EV-Board has no Zephyr board of its own; the demo builds on
+ESP32-S3-LCD-EV-Board has no Zephyr board of its own; the example builds on
 the SoC-identical `esp32s3_devkitc/esp32s3/procpu`.  Module differences
 (16 MB flash + PSRAM) are carried by the app overlay
 [boards/esp32s3_devkitc_procpu.overlay](boards/esp32s3_devkitc_procpu.overlay)
-(16 MB flash + 16 MB octal PSRAM for the N16R16V module — edit to match
+(16 MB flash + 16 MB octal PSRAM for the N16R16V module; edit to match
 yours).
 
 ## Why PSRAM (memory layout)
 
-The qemu demo's broker data plane is several MB; ESP32-S3 internal SRAM
-is ~512 KB (416 KB usable), so the demo lives off the PSRAM:
+The qemu example's broker data plane is several MB; ESP32-S3 internal SRAM
+is ~512 KB (416 KB usable), so the example lives off the PSRAM:
 
 * `CONFIG_ESP_SPIRAM=y` + `SPIRAM_MODE_OCT`: Zephyr's octal-PSRAM support.
 * The linker reserves a 4 MB heap window inside the PSRAM mapping
   (`CONFIG_ESP_SPIRAM_HEAP_SIZE`), registered as a shared multi-heap
   region by `soc/espressif/common/esp_psram.c`.
 * The **NanoNNG Zephyr allocator is switched to that window** via
-  `NNG_ZEPHYR_ALLOC_SMH` in [CMakeLists.txt](CMakeLists.txt) — but it
+  `NNG_ZEPHYR_ALLOC_SMH` in [CMakeLists.txt](CMakeLists.txt), but it
   uses a **plain `struct k_heap`** over the window rather than
   `shared_multi_heap_alloc()`: the latter is not thread-safe (bare
-  sys_heap, no lock) and nng allocates from many threads (poller, taskq
-  workers, per-connection aios) — unsynchronized smh access corrupted the
+  sys_heap, no lock) while nng allocates from many threads (poller, taskq
+  workers, per-connection aios), and unsynchronized smh access corrupted the
   heap at the first client connect.  See the allocator change in the nng
   submodule (`src/platform/zephyr/zephyr_alloc.c`).
 * Static pools that never need SRAM are relocated into PSRAM:
@@ -48,14 +48,14 @@ Final footprint (linker report): FLASH ~958 KB, internal SRAM
 
 ## Environment / prerequisites
 
-* A Zephyr ≥ 4.4 west workspace with its python venv — `west` lives in that
-  venv, not on the system `PATH`.  The Fedora setup guides are available in
+* A Zephyr ≥ 4.4 west workspace with its python venv; `west` lives in that
+  venv, not on the system `PATH`.  The Fedora setup guides are in
   [English](setup-fedora-en.md) and
   [简体中文](setup-fedora-zh.md).
 
 * An activated ESP-IDF.  The ESP32 build takes `west`, `esptool` and
   `idf-monitor` from the ESP-IDF environment rather than from the Zephyr
-  venv (activate one or the other — the last activation wins):
+  venv (activate one or the other; the last activation wins):
 
   ```sh
   source ~/.espressif/tools/activate_idf_v<version>.sh   # EIM install
@@ -67,10 +67,10 @@ Final footprint (linker report): FLASH ~958 KB, internal SRAM
   cross compiler still comes from the Zephyr SDK (1.0.1 ships the
   `xtensa-espressif_esp32s3_zephyr-elf` toolchain); ESP-IDF only supplies
   the tools.  `ZEPHYR_TOOLCHAIN_VARIANT=zephyr` states that explicitly, and
-  leaving it unset works too — but do **not** set it to `espressif`, a
-  variant current Zephyr has dropped.
+  leaving it unset works too, but do **not** set it to `espressif`: current
+  Zephyr has dropped that variant.
 
-* Espressif HAL **blobs** must be fetched once — without them
+* Espressif HAL **blobs** must be fetched once; without them
   `CONFIG_WIFI_ESP32` stays silently hidden and the build has no Wi-Fi:
   ```sh
   west blobs fetch hal_espressif
@@ -85,8 +85,8 @@ west build -b esp32s3_devkitc/esp32s3/procpu examples/nanomq_zephyr_esp32s3 \
 
 Without `-d`, `west build` uses `build/` **relative to the current
 directory**, not a directory next to the app: run the command above from
-the repo root and the build lands in `build/` there (git-ignored), which
-is also where a bare `west flash` looks for it.  The bring-up record was
+the repo root and the build output goes to `build/` there (git-ignored),
+which is also where a bare `west flash` looks for it.  The bring-up record was
 produced with an explicit `-d` into the west workspace instead; pass the
 same directory to both commands:
 
@@ -97,8 +97,8 @@ west build -b esp32s3_devkitc/esp32s3/procpu \
 ```
 
 `local.conf` is git-ignored; start from `local.conf.example`.  Wi-Fi
-credentials live in `CONFIG_BROKER_WIFI_SSID/PSK` (app Kconfig) and never
-land in the tree.
+credentials live in `CONFIG_BROKER_WIFI_SSID/PSK` (app Kconfig) and are
+never committed.
 
 ## Flash & run
 
@@ -108,10 +108,10 @@ west flash -d <the same build dir you built into> \
 # serial console (115200): idf-monitor / miniterm
 ```
 
-`-d` is relative to the current directory unless absolute — the board is
-not found (`... is not a directory`) when pointing at a build dir that
-does not exist, e.g. repo-relative `build/...` while the workspace-level
-dir is what was built.
+`-d` is relative to the current directory unless absolute; the board is
+not found (`... is not a directory`) when the build dir does not exist,
+e.g. repo-relative `build/...` while the workspace-level dir is what was
+built.
 
 Boot sequence on the console: PSRAM chip init + memory test → Zephyr →
 `wifi: connected` → DHCP (`net: ipv4 192.168.1.x`) → SNTP seed
@@ -123,10 +123,10 @@ DHCP has bound, main.c's `seed_realtime_from_sntp()` queries a public SNTP
 server and seeds `CLOCK_REALTIME` (nanolib's log module formats
 `time(NULL)`, so a correct system clock is all the timestamps need).
 Zephyr has no timezone database, so what is displayed is always UTC.  The
-seed is best effort — if no server answers (~9 s worst case) the broker
-still starts, just with the 1970 epoch.  Background, and why Zephyr's
+seed is best effort: if no server answers (~9 s worst case) the broker
+still starts, with the 1970 epoch.  Background, and why Zephyr's
 ready-made `net_init_clock_via_sntp()` helper was *not* reused:
-PORTING_ZEPHYR.md §22-4.
+see [the port tutorial](https://github.com/nanomq/nanomq/blob/zephyr-rtos/docs/en_US/tutorial/port-to-zephyr.md)'s Appendix A (time source).
 
 ## Verified on hardware (bring-up record)
 
@@ -139,13 +139,13 @@ PORTING_ZEPHYR.md §22-4.
     `NNG_ZEPHYR_NO_STDATOMIC` for every 32-bit non-x86 target
     (xtensa lacks 64-bit atomics);
     `BUILD_ALWAYS` so nng source edits actually rebuild.
-  * net_mgmt: one callback per event — OR'ing different layer-codes
-    into one `net_mgmt_init_event_callback` mask silently drops every
-    delivery (`mgmt_run_slist_callbacks` compares whole layer-code).
+  * net_mgmt: one callback per event; OR'ing different layer-codes into
+    one `net_mgmt_init_event_callback` mask silently drops every delivery
+    (`mgmt_run_slist_callbacks` compares whole layer-code).
   * wifi driver bring-up knobs in prj.conf comments (STA auto-DHCP /
     auto-reconnect interplay with an app-side connect flow).
 
-## Verified on hardware — full MQTT surface (2026-09-10)
+## Verified on hardware: full MQTT surface (2026-09-10)
 
 Client traffic now passes on the ESP32-S3-LCD-EV-Board:
 
@@ -155,10 +155,9 @@ Client traffic now passes on the ESP32-S3-LCD-EV-Board:
 * The earlier client-CONNECT heap corruption was an **allocator-family
   mismatch** in the MQTT codec (`mqtt_codec.c` freed `nni_zalloc`'d
   proto-data/properties with libc `free()`, plus two `nng_zalloc` ↔
-  `free` sites in `mqtt_qos_db.c`) — invisible upstream where the nng
-  allocator *is* libc malloc, corrupting both heaps here.  Fixed in
-  nng `cb34268`, bumped by nanomq `7ae89a2b`; full forensic record in
-  PORTING_ZEPHYR.md §22-3(b).
+  `free` sites in `mqtt_qos_db.c`).  It is invisible upstream, where the nng
+  allocator *is* libc malloc, and corrupts both heaps here.  Fixed in
+  nng `cb34268`, bumped by nanomq `7ae89a2b`; the allocator-family split is described in the port tutorial.
 * Companion fixes on the way: nanolib topic-queue pairing (nng
   `80cf26b`), webhook cJSON free (nanomq `84fd90f6`).
 
@@ -192,7 +191,7 @@ CONFIG_BROKER_WEBHOOK_URL="http://192.168.1.13:18080/"   # this host
 ```
 
 Then re-flash.  The URL must be the machine running `hook_receiver.py`, and
-it changes with the network — the forwarder is fire-and-forget with no
+it changes with the network; the forwarder is fire-and-forget with no
 retry, so an event emitted with the receiver down is lost (the broker logs
 `webhook_inproc.c ... HTTP aio result error : Connection refused`).
 
@@ -200,12 +199,12 @@ retry, so an event emitted with the receiver down is lost (the broker logs
 rule fires on *every* client connect, so with no receiver up each connect
 costs a failed HTTP attempt plus two synchronous log lines.  Measured on
 this board: one `mqtt_v5` run with webhook on produced 97 failed POSTs, and
-the retain subtest — a race decided by process start order — failed all
+the retain subtest, a race decided by process start order, failed all
 three attempts, where it otherwise passes on retry.  `prj.conf` therefore
 leaves the forwarder off; enable it here only when you want to test it.
 
 The two rules are `CLIENT_CONNACK` (every client connect) and
-`MESSAGE_PUBLISH` on **`hook/#`** — a namespace of its own, deliberately
+`MESSAGE_PUBLISH` on **`hook/#`**: a namespace of its own, deliberately
 clear of the `test/#` tree the CI WebSocket suite publishes through, since a
 POST per test message is real load over Wi-Fi.  To exercise it by hand:
 
@@ -215,8 +214,8 @@ mosquitto_pub -h <board-ip> -t 'hook/demo' -m 'hello'
 ```
 
 The `webhook_smoke` group takes the port for itself and stops its receiver
-afterwards, so stop any leftover `hook_receiver.py` before running the suite
-— it will otherwise refuse to start with a "something is already listening
+afterwards, so stop any leftover `hook_receiver.py` before running the suite;
+otherwise it refuses to start with a "something is already listening
 on :18080" error (the broker's target URL is baked in at build time, so the
 port cannot be moved).
 
@@ -224,7 +223,7 @@ Outside that group a receiver is usually *not* running, and `CLIENT_CONNACK`
 still fires on every connect of every group, so expect the broker log to
 show repeated `webhook_inproc.c ... HTTP aio result error : Connection
 refused` lines.  That is harmless: the event is dropped, and the queue
-drains (PORTING_ZEPHYR.md §22-6).
+drains.
 
 `--webhook` on the suite means "the broker under test has the forwarder
 compiled in": the `webhook_smoke` group then starts the receiver itself and
@@ -235,8 +234,8 @@ suite meaningful on a board built without webhook.
 The runner tunes itself to the hardware: it measures the TCP round trip to the
 broker and, when that says "not localhost" (loopback and the container bridge
 are both under ~1 ms; this board measures 14–600 ms over Wi-Fi), defaults to
-`--time-scale 4 --retry 2`.  Both are needed — the stretched scale covers the
+`--time-scale 4 --retry 2`.  Both are needed: the stretched scale covers the
 CI scripts' localhost-tuned sleeps, and the retry covers two of their subtests
 that are racy by construction.  An explicit `--time-scale`/`--retry` always
 wins; the values actually used are printed at startup
-(PORTING_ZEPHYR.md §22-3(e)/(g)).
+(see the port tutorial's Functional Testing section).

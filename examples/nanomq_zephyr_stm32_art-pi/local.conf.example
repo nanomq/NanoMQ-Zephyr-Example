@@ -1,4 +1,4 @@
-# Local, git-ignored configuration for the ART-Pi demo.
+# Local, git-ignored configuration for the ART-Pi example.
 #
 # Copy to local.conf and pass it at build time:
 #   west build -b art_pi examples/nanomq_zephyr_stm32_art-pi \

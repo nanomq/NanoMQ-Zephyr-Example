@@ -1,4 +1,4 @@
-# NanoMQ broker demo options
+# NanoMQ broker example options
 #
 # An application-level Kconfig file replaces the top of the Zephyr tree
 # (kconfig.cmake: KCONFIG_ROOT = <app>/Kconfig when it exists), so the whole
@@ -47,8 +47,8 @@ config BROKER_REST_ALLOW_PUBLISHED
 	depends on BROKER_REST_API
 	default n
 	help
-	  The sibling demos refuse the published admin/public pair outright.
-	  This switch relaxes that refusal so the demo can be exercised with the
+	  The sibling examples refuse the published admin/public pair outright.
+	  This switch relaxes that refusal so the example can be exercised with the
 	  credentials function_test.py defaults to, without passing
 	  --rest-user/--rest-pass.  Intended for a bench LAN only: it puts an
 	  administrative surface behind a password that is in every copy of the
@@ -61,7 +61,7 @@ config BROKER_WEBHOOK
 	  transport) and two rules (MESSAGE_PUBLISH on "hook/#",
 	  CLIENT_CONNACK).  Off by default: the CLIENT_CONNACK rule fires on
 	  every client connect, so with no receiver up each connect costs a
-	  failed HTTP attempt (see the ESP32-S3 demo's README).
+	  failed HTTP attempt (see the ESP32-S3 example's README).
 
 config BROKER_WEBHOOK_URL
 	string "Webhook receiver URL"
@@ -98,7 +98,7 @@ config BROKER_WIFI_SSID
 	depends on WIFI
 	default ""
 	help
-	  SSID of the 2.4 GHz access point the demo connects to.  Meant to be set
+	  SSID of the 2.4 GHz access point the example connects to.  Meant to be set
 	  from a local, git-ignored conf file (see local.conf.example) so real
 	  credentials never land in the tree.
 
@@ -136,7 +136,7 @@ config BROKER_STATUS_INTERVAL_S
 	default 60
 	range 0 3600
 	help
-	  Every N seconds the demo prints one line with the broker's uptime, its
+	  Every N seconds the example prints one line with the broker's uptime, its
 	  listeners and the current IPv4 address, e.g.
 
 	    broker: status running — uptime 63s, MQTT tcp://0.0.0.0:1883,

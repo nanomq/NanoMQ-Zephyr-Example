@@ -9,9 +9,9 @@
 # VERIFIED.  NNG is informational — it is the nng submodule commit REF records,
 # which the fetch script checks out along with it.
 #
-# Current pair: the tip of nanomq's zephyr-rtos branch (the branch the port is
-# published on) as of VERIFIED, with the nng comment fix that the same day's
-# migration added.
+# Current pair: the nanomq zephyr-rtos commit the examples were verified against
+# on VERIFIED (docs-only commits can land on the branch after it without
+# changing the build), with the nng commit it records.
 REPO=https://github.com/nanomq/nanomq.git
 REF=bb70558a
 NNG=3da6917f

@@ -1,8 +1,8 @@
-# NanoMQ → ESP32-S3 broker demo (sibling of examples/nanomq_zephyr_qemu_x86, the
+# NanoMQ → ESP32-S3 broker example (sibling of examples/nanomq_zephyr_qemu_x86, the
 # qemu_x86 version of the same app).
 #
 # Cross-compiles the NanoNNG submodule (nng/) with ExternalProject exactly
-# like the NanoNNG zephyr_mqtt demo does, then compiles the NanoMQ broker
+# like the NanoNNG zephyr_mqtt example does, then compiles the NanoMQ broker
 # core sources (nanomq/nanomq/) against it.
 #
 # Board: esp32s3_devkitc/esp32s3/procpu — the ESP32-S3-LCD-EV-Board has no

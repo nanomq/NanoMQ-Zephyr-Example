@@ -125,7 +125,7 @@ index 113be7a193a..313bb438025 100644
 +# whd_wifi_on() issues fails ("Could not set Country code") and the driver
 +# never initialises at all (ret = -19).  So building WHD without a CLM
 +# resource does not produce a working link on this board -- the option exists
-+# only to bisect CLM problems during bring-up.  Leave it off; see the demo's
++# only to bisect CLM problems during bring-up.  Leave it off; see the example's
 +# Kconfig help and
 +# examples/nanomq_zephyr_stm32_art-pi/Kconfig and nanomq docs/en_US/tutorial/port-to-art-pi.md.
 +if(CONFIG_AIROC_WIFI_NO_CLM)

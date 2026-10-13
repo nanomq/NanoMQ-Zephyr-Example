@@ -8,7 +8,7 @@
 // (conf_init defaults daemon=false; main.c calls broker() directly, bypassing
 // broker_start()).  Provide error-returning stubs so the broker object links.
 //
-// Same file as the two sibling demos; kept per-demo so each builds standalone.
+// Same file as the two sibling examples; kept per-example so each builds standalone.
 //
 #include "include/process.h"
 

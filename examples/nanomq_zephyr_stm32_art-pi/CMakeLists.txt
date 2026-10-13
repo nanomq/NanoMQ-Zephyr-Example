@@ -1,8 +1,8 @@
-# NanoMQ → ART-Pi (STM32H750XBH6) broker demo — sibling of
+# NanoMQ → ART-Pi (STM32H750XBH6) broker example — sibling of
 # examples/nanomq_zephyr_qemu_x86 and examples/nanomq_zephyr_esp32s3.
 #
 # Cross-compiles the NanoNNG submodule (nng/) with ExternalProject exactly
-# like the sibling demos do, then compiles the NanoMQ broker core sources
+# like the sibling examples do, then compiles the NanoMQ broker core sources
 # (nanomq/nanomq/) against it.
 #
 # Board: art_pi (Ruiside Electronic ART-Pi, STM32H750XBH6, 1 MB SRAM,
@@ -29,7 +29,7 @@ if(NOT DEFINED ZEPHYR_BASE)
 endif()
 
 # Mandatory: without it a plain `west build -b art_pi` links into the 128 KB
-# internal flash (which cannot hold the broker) and the demo overlay also
+# internal flash (which cannot hold the broker) and the example overlay also
 # disables the display controller, whose framebuffer would otherwise sit in
 # the SDRAM window the broker heap uses.
 set(DTC_OVERLAY_FILE
@@ -45,7 +45,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/../cmake/nanomq_dependency.cmake)
 
 # ── NanoMQ broker core ──────────────────────────────────────────
 # Mirror of the SOURCES list in nanomq/nanomq/CMakeLists.txt with the same
-# three deviations as the sibling demos:
+# three deviations as the sibling examples:
 #   * process.c excluded — pure POSIX (fork/kill/<paths.h>); its symbols
 #     (process.h) are provided by src/process_stub.c instead.
 #   * plugin/plugin.c excluded — NNG_ENABLE_PLUGIN off.
@@ -120,7 +120,7 @@ set(NNG_EXTRA_ARGS
 # CMAKE_C_FLAGS.  A libnng built without ENABLE_LOG leaves the broker's log
 # module dead; built without ACL_SUPP it lays struct conf out differently
 # from the app side (auth_http shifts by the conf_acl fields) and
-# start_rest_server() locks a garbage mutex — the qemu demo's issue #11.
+# start_rest_server() locks a garbage mutex — the qemu example's issue #11.
 #
 # NNG_ZEPHYR_ALLOC_SMH switches the nng Zephyr allocator from libc malloc to
 # a k_heap over external RAM — here the SDRAM window — as the broker data

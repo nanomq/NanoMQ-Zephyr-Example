@@ -3,7 +3,7 @@
 The NanoMQ data plane does not fit in the ART-Pi's 1 MB of internal SRAM
 (the ESP32-S3 sibling gives it a 4 MB window), but the board has 32 MB of
 FMC SDRAM, of which the devicetree already declares a 6 MB
-`zephyr,memory-region` named `SDRAM1` at 0xC0000000. The demo enables
+`zephyr,memory-region` named `SDRAM1` at 0xC0000000. The example enables
 `MEMC_STM32_SDRAM`, initialises a plain `k_heap` over that region at boot
 (`shared_multi_heap_alloc()` is deliberately avoided — its unsynchronised
 `sys_heap` corrupted the heap under the S3 port's multi-threaded traffic),

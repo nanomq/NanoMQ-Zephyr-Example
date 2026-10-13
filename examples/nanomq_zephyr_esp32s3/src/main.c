@@ -203,7 +203,7 @@ dump_iface_ipv4_cb(struct net_if *iface, struct net_if_addr *ifaddr, void *user_
 {
 	char buf[NET_IPV4_ADDR_LEN];
 
-	// qemu demo: NET_ADDR_MANUAL (static); ESP32-S3 demo: NET_ADDR_DHCP.
+	// qemu example: NET_ADDR_MANUAL (static); ESP32-S3 example: NET_ADDR_DHCP.
 	if (ifaddr->address.family == AF_INET &&
 	    (ifaddr->addr_type == NET_ADDR_MANUAL || ifaddr->addr_type == NET_ADDR_DHCP)) {
 		printk("net: ipv4 %s\n", net_addr_ntop(
@@ -241,7 +241,7 @@ dump_ifaces(void)
 
 #if defined(CONFIG_WIFI_ESP32)
 //
-// Wi-Fi STA + DHCPv4 bring-up (ESP32-S3 demo; the qemu_x86 demo has no
+// Wi-Fi STA + DHCPv4 bring-up (ESP32-S3 example; the qemu_x86 example has no
 // Wi-Fi).  The broker binds 0.0.0.0 listeners, but there is nothing to
 // accept connections from until the Wi-Fi link is up and has an IPv4
 // address, so main() runs this before broker().
@@ -372,8 +372,8 @@ static const char *const sntp_servers[] = {
 // effort: with no server reachable the broker still starts, just with the
 // wrong clock.  We roll this by hand instead of calling Zephyr's
 // net_init_clock_via_sntp() because that lives in net_config, a directory
-// only added to the build by CONFIG_NET_CONFIG_SETTINGS (see prj.conf and
-// PORTING_ZEPHYR.md §22-4).
+// only added to the build by CONFIG_NET_CONFIG_SETTINGS (see prj.conf; the
+// time-source rationale is in the port tutorial).
 static void
 seed_realtime_from_sntp(void)
 {
@@ -434,7 +434,7 @@ main(void)
 #if defined(CONFIG_WIFI_ESP32)
 	// Wi-Fi first: the broker's 0.0.0.0 listeners are only reachable
 	// once the link is up and DHCP has assigned an address.  qemu_x86
-	// (the sibling demo) takes the static-IP path in prj.conf instead.
+	// (the sibling example) takes the static-IP path in prj.conf instead.
 	if (wifi_sta_connect() != 0) {
 		printk("net: broker starting without a network interface\n");
 	}
@@ -517,7 +517,7 @@ main(void)
 #ifdef CONFIG_BROKER_WS
 	// WebSocket listener (MQTT over RFC6455, paho's default path /mqtt).
 	// broker() listens on websocket.url verbatim — the CONF_WS_URL_DEFAULT
-	// fallback lives in the broker_start*() file path, which this demo
+	// fallback lives in the broker_start*() file path, which this example
 	// bypasses — so both fields must be set here.  TLS is compiled out of
 	// the Zephyr NanoNNG, so the wss: sibling listener stays inert.
 	nmq_conf->websocket.enable = true;
@@ -576,7 +576,7 @@ main(void)
 
 #if defined(ENABLE_LOG)
 	// Activate the nanolib log backend (console) and apply conf->log.level
-	// — broker_start_with_conf() normally does this, but the embedded demo
+	// — broker_start_with_conf() normally does this, but the embedded example
 	// calls broker() directly.
 	//
 	// nanomq's log_init() (mqtt_api.c) applies log->level and registers the

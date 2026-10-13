@@ -1,6 +1,6 @@
-# A lost Wi-Fi link has no event; the demo polls the join state
+# A lost Wi-Fi link has no event; the example polls the join state
 
-The ART-Pi demo associates once at boot and then serves the LAN for as long as
+The ART-Pi example associates once at boot and then serves the LAN for as long as
 it runs.  Because its listeners sit on `0.0.0.0`, the broker itself survives a
 link that goes away — the board just becomes unreachable at its old address
 and stays that way.  The only symptom is the 60 s status heartbeat printing
@@ -8,7 +8,7 @@ itself without the `ipv4 ...` part, and the only way back used to be a reset
 (`src/main.c`: "nothing retries the association for us, so a reset is the way
 back").
 
-Nothing in the demo watched the link after the boot-time association, and the
+Nothing in the example watched the link after the boot-time association, and the
 driver's event stream does not report the loss either.
 `drivers/wifi/infineon/airoc_wifi.c` raises
 `NET_EVENT_WIFI_DISCONNECT_RESULT` only from `airoc_mgmt_disconnect()` — an
@@ -28,7 +28,7 @@ from "the AP is gone" however it went away.
 ## Considered Options
 
 - **Wait for `NET_EVENT_WIFI_DISCONNECT_RESULT`.**  The cleanest signal when
-  it fires, and the demo does handle it — but it only fires for an explicit
+  it fires, and the example does handle it — but it only fires for an explicit
   disconnect, which is not how a broker's link usually dies.
 - **Watch `net_if_is_dormant()`.**  Free and immediate for deauth and
   disassoc; blind to beacon loss, where the driver's event task never touches
@@ -37,7 +37,7 @@ from "the AP is gone" however it went away.
   the dormant flag complete, and it is arguably an upstream bug fix — but the
   signal the application needs ("is this link usable?") already lives in WHD,
   and another out-of-tree driver change buys no additional information for
-  this demo.
+  this example.
 - **Poll `NET_REQUEST_WIFI_IFACE_STATUS`** (chosen): one mgmt round trip every
   `CONFIG_BROKER_WIFI_MONITOR_PERIOD_S` seconds (default 10) from a dedicated
   supervisor thread.  It sees all three kinds of loss, costs a few SDIO

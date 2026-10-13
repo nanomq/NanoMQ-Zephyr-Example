@@ -1,5 +1,5 @@
 #!/bin/bash
-# Acceptance suite for the NanoMQ-on-Zephyr broker demo.
+# Acceptance suite for the NanoMQ-on-Zephyr broker example.
 #
 # Drives host mosquitto clients against the broker's SLIRP-forwarded TCP
 # port (host tcp:1883 -> guest 10.0.2.15:1883 by default).  Covers MQTT

@@ -2,7 +2,7 @@
 """Program the ART-Pi's QSPI flash over SWD.
 
 The broker image is ~0.5 MB while the STM32H750's internal flash is 128 KB and
-holds the ART-Pi factory bootloader, so the demo is linked into the QSPI
+holds the ART-Pi factory bootloader, so the example is linked into the QSPI
 memory-mapped window at 0x90000000 (docs/adr/0001).  pyocd's built-in
 stm32h750xx target knows neither that flash region nor the W25Q64 programming
 algorithm, so this script adds both: it loads the vendor's CMSIS flash
@@ -23,7 +23,7 @@ Implementation notes:
     assumes a freshly reset MCU; running it over a live application makes
     Init() time out (verified on hardware).
   * The algorithm's code, two page buffers and stack live in SRAM4
-    (0x38000000, 64 KB), which nothing else in this demo uses.
+    (0x38000000, 64 KB), which nothing else in this example uses.
   * pyocd erases only the sectors it programs (chip_erase="sector"), so the
     rest of the QSPI — e.g. the remainder of the factory firmware — is left
     untouched.
@@ -55,7 +55,7 @@ from pyocd.target.pack.flash_algo import PackFlashAlgo
 
 TARGET = "stm32h750xx"
 
-# SRAM4: 64 KB at the top of the SRAM banks, unused by the demo.
+# SRAM4: 64 KB at the top of the SRAM banks, unused by the example.
 ALGO_RAM_START = 0x38000000
 ALGO_RAM_SIZE = 0x10000
 
@@ -91,8 +91,8 @@ def elf_load_segments(path: Path):
 
 
 def main() -> int:
-    demo_dir = Path(__file__).resolve().parent.parent
-    default_elf = demo_dir.parent.parent / "build" / "nanomq_zephyr_stm32_art-pi" / "zephyr" / "zephyr.elf"
+    example_dir = Path(__file__).resolve().parent.parent
+    default_elf = example_dir.parent.parent / "build" / "nanomq_zephyr_stm32_art-pi" / "zephyr" / "zephyr.elf"
 
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--elf", default=str(default_elf),
@@ -120,8 +120,8 @@ def main() -> int:
     if not elf.is_file():
         print("ELF not found: %s\nBuild first:\n"
               "  west build -b art_pi -d %s %s -- -DEXTRA_CONF_FILE=%s"
-              % (elf, demo_dir.parent.parent / "build" / "nanomq_zephyr_stm32_art-pi",
-                 demo_dir, demo_dir / "local.conf"), file=sys.stderr)
+              % (elf, example_dir.parent.parent / "build" / "nanomq_zephyr_stm32_art-pi",
+                 example_dir, example_dir / "local.conf"), file=sys.stderr)
         return 2
 
     # The vendor FLM describes the whole 8 MB W25Q64 (4 KB sectors); pyocd

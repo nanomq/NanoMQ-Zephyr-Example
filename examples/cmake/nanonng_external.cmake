@@ -118,7 +118,7 @@ ExternalProject_Add(nanonng
     ${NNG_EXTRA_ARGS}
   # Source edits inside the nng tree do not bump ExternalProject stamps,
   # so without this a changed zephyr_alloc.c etc. silently stays unbuilt
-  # (observed: stale libnng.a served for several demo builds).  With
+  # (observed: stale libnng.a served for several example builds).  With
   # BUILD_ALWAYS the sub-build runs each time and ninja no-ops when
   # nothing changed.
   BUILD_ALWAYS TRUE

@@ -45,7 +45,7 @@ as ~300 error lines a second.
   timeouts on every other board.
 - **Keep the chip out of the sleep** (chosen): call
   `whd_wifi_disable_powersave()` once `whd_wifi_on()` succeeds, gated by
-  `CONFIG_AIROC_WIFI_DISABLE_POWERSAVE` and on in this demo's `wifi.conf`.  It
+  `CONFIG_AIROC_WIFI_DISABLE_POWERSAVE` and on in this example's `wifi.conf`.  It
   is a mains-powered broker; the chip has no reason to sleep, and awake it
   never issues the wake-up writes.
 

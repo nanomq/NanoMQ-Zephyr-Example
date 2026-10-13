@@ -1,5 +1,5 @@
 /*
- * ART-Pi (-b art_pi) demo overlay.
+ * ART-Pi (-b art_pi) example overlay.
  *
  * 1. Run from QSPI, not the 128 KB internal flash.
  *
@@ -13,7 +13,7 @@
  *
  * Note: do NOT enable the QSPI flash driver (CONFIG_FLASH /
  * FLASH_STM32_QSPI) in this build.  Its init would reprogram the QUADSPI
- * while the CPU is fetching instructions from it.  This demo has no
+ * while the CPU is fetching instructions from it.  This example has no
  * filesystem, so no flash driver is needed.  (CONFIG_FLASH is off by default
  * in this Zephyr revision — keep it that way.)
  */
@@ -106,14 +106,14 @@
 		 * with that net — the PI14/PI15 hits are the LCD's
 		 * LTDC_CLK/LTDC_R0, see Zephyr's own art_pi.dts) and made no
 		 * difference: WHD still never saw a wake-up.  The driver's
-		 * in-band path is what this demo uses; see
+		 * in-band path is what this example uses; see
 		 * nanomq docs/en_US/tutorial/port-to-art-pi.md and CONFIG_AIROC_WIFI_WHD_POKE.
 		 */
 	};
 };
 
 /*
- * The TF card slot (SDMMC1) is unused by this demo, and the SDHC driver
+ * The TF card slot (SDMMC1) is unused by this example, and the SDHC driver
  * instantiates for every enabled st,stm32-sdmmc node — disabling it keeps the
  * card-detect/disk stack out of the image and leaves SDMMC2 solely for Wi-Fi.
  */

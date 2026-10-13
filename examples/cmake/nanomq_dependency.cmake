@@ -5,7 +5,7 @@
 # dependency of this repository by scripts/fetch-nanomq.sh, pinned to the
 # revision recorded in nanomq.ref.
 #
-# Usage from a demo CMakeLists.txt:
+# Usage from a example CMakeLists.txt:
 #   include(../cmake/nanomq_dependency.cmake)
 #
 # Defines:

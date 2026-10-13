@@ -8,7 +8,7 @@
 # builds first unless --no-build is given as well).
 #
 # VARIANT selects the network layer (default: --wifi, the configuration this
-# demo is verified with):
+# example is verified with):
 #   --wifi   Wi-Fi STA on the on-board AP6212  (wifi.conf + art_pi_wifi.overlay)
 #   --eth    on-board Ethernet PHY             (eth.conf, no extra overlay)
 #   --usb    USB-ECM device port               (usb.conf + art_pi_usb.overlay)

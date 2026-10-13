@@ -5,7 +5,7 @@ on this board, so Infineon's WHD — which only enters its receive path when
 that interrupt wakes its worker thread — wrote every WLAN ioctl to the chip
 and then timed out without reading the reply
 (`iovar "cap" -> 101580800`, 5 s each, `airoc_wifi_init_primary failed
-ret = -19`). The demo therefore pokes `whd_thread_notify_irq()` from a 20 ms
+ret = -19`). The example therefore pokes `whd_thread_notify_irq()` from a 20 ms
 timer (`CONFIG_AIROC_WIFI_WHD_POKE`), which gives the thread the wake-up the
 interrupt would have delivered so that its poll reads the queued frames.
 
@@ -55,6 +55,6 @@ interrupt would have delivered so that its poll reads the queued frames.
   but ICMP could fail in that state, so liveness had to be judged over TCP.
   That flood was not a property of polling: ADR 0004 traced it to the chip's
   own KSO sleep (a sleeping device does not answer the write that wakes it)
-  and fixed it by keeping the chip awake, which is the demo's default now.  If
+  and fixed it by keeping the chip awake, which is the example's default now.  If
   the messages ever come back in bulk, check
   `CONFIG_AIROC_WIFI_DISABLE_POWERSAVE` first.

@@ -1,7 +1,7 @@
-# NanoMQ → Zephyr broker demo.
+# NanoMQ → Zephyr broker example.
 #
 # Cross-compiles the NanoNNG submodule (nng/) with ExternalProject exactly
-# like the NanoNNG zephyr_mqtt demo does, then compiles the NanoMQ broker
+# like the NanoNNG zephyr_mqtt example does, then compiles the NanoMQ broker
 # core sources (nanomq/nanomq/) against it.
 #
 # Build:  west build -b qemu_x86 examples/nanomq_zephyr_qemu_x86

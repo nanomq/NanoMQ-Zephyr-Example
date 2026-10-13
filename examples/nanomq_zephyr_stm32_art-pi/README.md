@@ -13,7 +13,7 @@ different board and network layer.  Feature surface matches the other two:
 MQTT over TCP (:1883) + REST API (:8081, Basic auth) + MQTT over WebSocket
 (:8083/mqtt), plus an optional webhook forwarder.  DEBUG log stays off.
 
-Acceptance tier: **functional parity** — the suite's three hard gates
+Acceptance tier: **functional parity**: the suite's three hard gates
 (`mqtt_v311`, `mqtt_v5`, `rest_get`) pass against the board (record below).
 
 ## Board target
@@ -25,11 +25,11 @@ connector (SWD + a 115200 virtual COM port on `/dev/ttyACM0`).
 
 ## Memory layout
 
-Two decisions carry this demo; both have an ADR.
+Two decisions shape this example; each has an ADR.
 
 **The image runs from QSPI XIP at 0x90000000**
 ([docs/adr/0001](docs/adr/0001-qspi-xip-behind-art-pi-factory-bootloader.md)).
-The broker is ~1 MB of code and the internal flash is 128 KB — all of it
+The broker is ~1 MB of code and the internal flash is 128 KB, all of it
 occupied by the Ruiside factory bootloader, which already maps the QUADSPI
 and jumps to the vector table it finds at 0x90000000.  The overlay points
 `zephyr,flash` at the 8 MB QSPI window
@@ -46,14 +46,14 @@ The devicetree's 6 MB `SDRAM1` region at 0xC0000000 feeds a plain `k_heap`
 disabled so its framebuffer does not compete for the same window.
 
 Wi-Fi build footprint: FLASH ~977 KB (of 8 MB), RAM ~451 KB / 512 KB
-(86 %) — the internal-SRAM budget is the tight one, not the flash.
+(86 %); the internal-SRAM budget is the tight one, not the flash.
 
 ## Networking
 
 ### Wi-Fi (default configuration)
 
 The AP6212's Wi-Fi side is an SDIO function.  Zephyr's board devicetree wires
-nothing for it, so the demo adds both the SDIO host and the AIROC/WHD device
+nothing for it, so the example adds both the SDIO host and the AIROC/WHD device
 node:
 
 | Signal | Pin | Note |
@@ -67,8 +67,8 @@ Pin usage comes from the vendor's Wi-Fi project (`projects/art_pi_wifi/` in
 the ART-Pi SDK); WL_REG_ON is `AP6212_WL_REG_ON == GET_PIN(C, 13)` in
 `libraries/drivers/drv_wlan.c`.
 
-Three things have to be right for the chip to join an AP.  All three were
-found the hard way; the full record is in
+Three conditions have to hold for the chip to join an AP.  All three were
+established on hardware; the full record is in
 [the ART-Pi article](https://github.com/nanomq/nanomq/blob/zephyr-rtos/docs/en_US/tutorial/port-to-art-pi.md)
 in nanomq's docs.
 
@@ -86,7 +86,7 @@ in nanomq's docs.
 2. **The chip never asserts the in-band SDIO card interrupt.**  With the
    controller side fully armed (`SDMMC_MASK.SDIOITIE` set, CCCR
    `INTEN=0x7`, WLAN function ready, firmware downloaded, CLM accepted), the
-   STM32 SDMMC's `SDMMC_STA.SDIOIT` stays clear — measured on hardware, with
+   STM32 SDMMC's `SDMMC_STA.SDIOIT` stays clear; this was measured on hardware, with
    `SDIOITIE` confirmed set at the same moment.  WHD's thread only polls for
    received frames when it is woken *with the bus-interrupt flag set*
    (`whd_bus_sdio_use_status_report_scheme()` returns `WHD_FALSE` for this
@@ -105,7 +105,7 @@ in nanomq's docs.
    4-bit transfers with a `Command response timeout` flood, and a 1-bit
    configuration behaves the same; an out-of-band host-wake on the
    schematic's `GPIO_WIFI_HOST_WAKE` net (PE3) produced no wake-up either.
-   Polling is also what the board's vendor stack does — the ART-Pi SDK's
+   Polling is also what the board's vendor stack does: the ART-Pi SDK's
    `libraries/drivers/drv_sdio.c` never enables `SDMMC_MASK.SDIOITIE` at all.
    See [docs/adr/0003](docs/adr/0003-poll-the-whd-thread-because-the-art-pi-never-asserts-the-sdio-card-interrupt.md).
 
@@ -123,7 +123,7 @@ in nanomq's docs.
    `NET_EVENT_IPV4_DHCP_BOUND` before starting the broker.  The boot retries
    are **bounded** (3 attempts): a link that never associates must not keep
    the broker from starting, because then there is no broker log at all and
-   the board looks dead — it starts anyway and prints
+   the board appears dead; it starts anyway and prints
    `wifi: no association after 3 attempts ... starting the broker anyway`.
 
    After that bring-up a **supervisor thread** owns the link for the rest of
@@ -132,7 +132,7 @@ in nanomq's docs.
    re-associates and re-requests a lease (5 s backoff doubling to 60 s).  It
    is needed because the airoc driver raises
    `NET_EVENT_WIFI_DISCONNECT_RESULT` only for an explicit disconnect
-   request: an AP that goes away — deauth, disassoc or plain beacon loss —
+   request: an AP that goes away (deauth, disassoc or plain beacon loss)
    produces no event, so before the supervisor a dropped link left the broker
    listening on an address it no longer had until the board was reset.  The
    poll reads WHD's `JOIN_LINK_READY` state through
@@ -150,15 +150,15 @@ in nanomq's docs.
 
 [eth.conf](eth.conf) builds the STM32 Ethernet MAC + LAN8720A PHY variant
 instead of Wi-Fi (`CONFIG_ETH_STM32_HAL=y`, no Wi-Fi overlay).  Bring-up first
-blamed the PHY for staying silent — MDIO scans found nothing and the driver
-reported `PHY (0) ID FFFF` / `HAL_ETH_Init failed` — but that was with a
+blamed the PHY for staying silent (MDIO scans found nothing and the driver
+reported `PHY (0) ID FFFF` / `HAL_ETH_Init failed`), but that was with a
 `reset-gpios = <&gpioa 3 GPIO_ACTIVE_LOW>` override on `&eth_phy` (PA3 was
 assumed to be the board's `ETH_RESET_PIN`).  With the override removed the MAC
 initialises and no PHY error is logged; the interface comes up dormant,
 waiting for carrier.
 
 The bench has no Ethernet cable, so link-up, DHCP and traffic over Ethernet
-have **not** been exercised.  Treat this variant as "the driver runs".
+have **not** been exercised.  Treat this variant as driver-level verification.
 
 ### USB-ECM (optional; firmware verified, blocked on the physical link)
 
@@ -167,7 +167,7 @@ build the board as a **USB device**: the USB-OTG port (PA11/PA12, the board's
 already-enabled `zephyr_udc0`) presents a CDC-ECM Ethernet function, and
 `src/main.c` makes the board the **DHCPv4 server** for that link (static
 10.10.10.1/24, pool from .10) so the host's desktop configures the new
-interface by itself — no `sudo`, no manual `ip(8)`.  The broker then listens
+interface by itself, with no `sudo` and no manual `ip(8)`.  The broker then listens
 on that link exactly as it does over Wi-Fi.
 
 The firmware side is verified: the controller initialises
@@ -176,11 +176,10 @@ reports itself powered and softly *connected* (`GCCFG.PWRDWN=1`,
 `DCTL.SDIS=0`), with PA11/PA12 muxed to AF10 as Zephyr's own pinctrl defines.
 
 What is missing is the link itself: **the host sees no USB device at all.**
-On the bench PC, `journalctl -k` logs nothing — not even when the firmware
+On the bench PC, `journalctl -k` logs nothing, not even when the firmware
 cycles the D+ pull-up, which every xHCI host reports if the port is
 electrically connected.  So nothing is reaching the PC from this port; the
-firmware is idle-waiting for a host that never appears.  Things worth trying
-on the hardware side, in order:
+firmware waits for a host that never appears.  Hardware-side checks, in order:
 
 * a different cable (charge-only cables carry no data), preferring a
   **USB-A → USB-C** cable over C-to-C: a Type-C receptacle wired for legacy
@@ -192,12 +191,12 @@ on the hardware side, in order:
 
 With the cable accepted, no further firmware work is needed: the host gets a
 lease from the board and the broker is reachable at `10.10.10.1:1883` (MQTT),
-`:8081` (REST, Basic auth) and `:8083/mqtt` (WebSocket) — the same
+`:8081` (REST, Basic auth) and `:8083/mqtt` (WebSocket), the same
 `tools/verify.sh 10.10.10.1` gates then apply.
 
 ## Environment / prerequisites
 
-* A Zephyr ≥ 4.4 west workspace with its Python venv — `west` and `pyocd`
+* A Zephyr ≥ 4.4 west workspace with its Python venv; `west` and `pyocd`
   live in that venv, not on the system `PATH`:
   ```sh
   source ~/zephyr-venv/bin/activate
@@ -207,20 +206,20 @@ lease from the board and the broker is reachable at `10.10.10.1:1883` (MQTT),
   [English](../nanomq_zephyr_esp32s3/setup-fedora-en.md) /
   [简体中文](../nanomq_zephyr_esp32s3/setup-fedora-zh.md).
 
-* **Apply the out-of-tree patches first.**  The demo needs three deltas
+* **Apply the out-of-tree patches first.**  The example needs three deltas
   outside this repository (the Zephyr tree and one west module); they are in
   [patches/](patches/), with the base revisions in
-  [patches/README.md](patches/README.md).  In-repo work (the demo directory
+  [patches/README.md](patches/README.md).  In-repo work (the example directory
   itself, the `nng` submodule's STM32 `SUCCESS` rename) travels on the
   branches instead.
 
-* **Fetch the Infineon blobs once** — the 43438 firmware image is not in
+* **Fetch the Infineon blobs once**: the 43438 firmware image is not in
   git, and without it `CONFIG_WIFI_AIROC` has no blob to embed:
   ```sh
   west blobs fetch hal_infineon     # accepts the Infineon licence
   ```
 
-* **Vendor QSPI flash algorithm** — `tools/ART-Pi_W25Q64.FLM` is fetched from
+* **Vendor QSPI flash algorithm**: `tools/ART-Pi_W25Q64.FLM` is fetched from
   the ART-Pi SDK the same way (it is git-ignored, not redistributed):
   ```sh
   git clone --depth 1 --filter=blob:none --no-checkout \
@@ -244,7 +243,7 @@ west build -b art_pi examples/nanomq_zephyr_stm32_art-pi -- \
 
 `local.conf` is git-ignored; start from
 [local.conf.example](local.conf.example).  Wi-Fi credentials live in
-`CONFIG_BROKER_WIFI_SSID/PSK` (app Kconfig) and never land in the tree.
+`CONFIG_BROKER_WIFI_SSID/PSK` (app Kconfig) and are never committed.
 Without `-d`, `west build` uses `build/` **relative to the current
 directory**; the helpers below default to
 `build/nanomq_zephyr_stm32_art-pi` at the repository root.
@@ -262,10 +261,10 @@ examples/nanomq_zephyr_stm32_art-pi/tools/flash.sh --usb
 ```
 
 `--wifi` is the default on purpose: it is the only variant that reaches the
-LAN without extra hardware.  `--eth` and `--usb` want a cable to a live far
-end, so on a bench without one they come up and then sit at
-`eth: still no link ...` / `usb: no carrier ...` forever — which looks like a
-broken board but is just the wrong variant.
+LAN without extra hardware.  `--eth` and `--usb` need a cable to a live far
+end, so on a bench without one they come up and then stay at
+`eth: still no link ...` / `usb: no carrier ...` indefinitely; that looks like a
+broken board but is only the wrong variant.
 
 `tools/flash.sh` builds with `local.conf` plus the variant's conf file and
 overlay, then runs
@@ -274,20 +273,20 @@ flash algorithm (`ART-Pi_W25Q64.FLM`) into SRAM4, resets the target (the
 loader assumes fresh clocks/caches/peripherals) and programs the ELF's load
 segments into the QSPI window at 0x90000000 over SWD.  Only the sectors the
 image covers are erased.  It resets and resumes the target once more at the
-end, because pyocd leaves the core halted after programming — without that
+end, because pyocd leaves the core halted after programming; without that
 the image would only start at the next power cycle.
 
 The first flash overwrites the factory RT-Thread application in QSPI slot0
 (rebuildable from `projects/art_pi_factory` in the ART-Pi SDK).  The factory
 *bootloader* in internal flash is untouched, and it is what prints the
-`Powered by RT-Thread.` logo before jumping to the image — that banner is the
-bootloader's, not a sign that the demo did not start.
+`Powered by RT-Thread.` logo before jumping to the image; that banner is the
+bootloader's, not a sign that the example did not start.
 
 ## Console and boot log
 
 The console is the ST-Link's virtual COM port: 115200 8N1 on `/dev/ttyACM0`,
 no login, just the boot log and everything the broker prints.  It is the
-board's only window into a bring-up, so this is the first thing to open after
+board's only window into a bring-up, so open it first after
 flashing.
 
 ### Open or capture it
@@ -303,8 +302,8 @@ examples/nanomq_zephyr_stm32_art-pi/tools/console.sh -o /tmp/boot.log
 examples/nanomq_zephyr_stm32_art-pi/tools/console.sh -o /tmp/boot.log --drain 10
 ```
 
-Any 115200 8N1 terminal does the same — `tio /dev/ttyACM0`,
-`picocom -b 115200 /dev/ttyACM0`, `minicom -D /dev/ttyACM0` — and a plain
+Any 115200 8N1 terminal works the same (`tio /dev/ttyACM0`,
+`picocom -b 115200 /dev/ttyACM0`, `minicom -D /dev/ttyACM0`); a plain
 capture is:
 
 ```sh
@@ -313,7 +312,7 @@ cat /dev/ttyACM0 | tee /tmp/boot.log       # Ctrl-C to stop
 ```
 
 `tools/flash.sh` leaves the board reset and running when it exits, so the
-boot log is on the wire immediately — start the capture first if you want it
+boot log is on the wire immediately; start the capture first if you want it
 from the first line.  Only one reader at a time: a second `cat`/`minicom`
 splits the stream between them and both look truncated.
 
@@ -354,28 +353,28 @@ net: ipv4 192.168.1.3
 
 Reading it, in order:
 
-* `Powered by RT-Thread.` / `msh >` — the **ART-Pi factory bootloader**'s own
-  banner, printed before it maps the QSPI and jumps to the demo.  It is not
-  the demo failing to start, and not RT-Thread running the broker.
+* `Powered by RT-Thread.` / `msh >`: the **ART-Pi factory bootloader**'s own
+  banner, printed before it maps the QSPI and jumps to the example.  It is not
+  the example failing to start, and not RT-Thread running the broker.
 * `sdhc_stm32: SDHC Init Passed Successfully`, then
-  `sd: Card does not support CMD8` — the SDIO host is up and the Wi-Fi card is
+  `sd: Card does not support CMD8`: the SDIO host is up and the Wi-Fi card is
   enumerated as a legacy (SDIO, not SD) card.  `Card does not support CMD8` is
   normal here.
-* `WLAN MAC Address`, `WLAN Firmware`, `WLAN CLM`, `WHD VERSION` — raw
+* `WLAN MAC Address`, `WLAN Firmware`, `WLAN CLM`, `WHD VERSION`: raw
   `printf` output from Infineon's WHD as it talks to the chip.  The MAC is this
-  board's AP6212; the firmware/CLM versions are the resources the demo loaded
+  board's AP6212; the firmware/CLM versions are the resources the example loaded
   (hardware section above).  These lines appear *before* the Zephyr banner
-  because raw `printf` does not go through the log subsystem the banner uses —
+  because raw `printf` does not go through the log subsystem the banner uses;
   that ordering is cosmetic.
-* `*** Booting Zephyr OS build v4.4.0-4779-g11a87708d415 ***` — the demo
+* `*** Booting Zephyr OS build v4.4.0-4779-g11a87708d415 ***`: the example
   itself, i.e. the point where `main()` starts doing work.
 * `wifi: connecting to "<SSID>"` → `wifi: connected` →
-  `wifi: IPv4 address assigned (DHCPv4)` — `src/main.c`'s STA flow.  The
+  `wifi: IPv4 address assigned (DHCPv4)`: `src/main.c`'s STA flow.  The
   `wifi:` lines go through Zephyr's logging (`printk` is routed into the
   deferred log thread in this build) while nanolib's `printf` writes straight
   to the console, so `NanoMQ Broker is started successfully!` can appear
   between `wifi: connecting` and `wifi: connected` even though the broker
-  starts afterwards — cosmetic, exactly like the WHD lines above.  A
+  starts afterwards; this is cosmetic, exactly as with the WHD lines above.  A
   `wifi: link down — reconnecting ...` line would not be cosmetic: that is
   the supervisor reacting to a link that went away.
 * `net_ipv6_nd: DAD failed, no ll IPv6 address!` is an **error-severity log
@@ -383,14 +382,14 @@ Reading it, in order:
   IPv6, so duplicate-address detection has nothing to work on.  The broker uses
   IPv4.
 * `NanoMQ Broker is started successfully!` plus the two `broker:`/`web_server:`
-  lines — the REST listener is on `:8081`, MQTT on `:1883`, WebSocket on
+  lines: the REST listener is on `:8081`, MQTT on `:1883`, WebSocket on
   `:8083/mqtt`.
-* `net: ipv4 192.168.x.y` — the address `tools/verify.sh` wants.
+* `net: ipv4 192.168.x.y`: the address `tools/verify.sh` wants.
 * Then, once a minute: `broker: status running — uptime 64s, MQTT
   tcp://0.0.0.0:1883, REST http://0.0.0.0:8081, WS :8083/mqtt, ipv4
   192.168.1.3`.  **The broker's startup block above is printed once**, so a
-  console opened later never shows it — this heartbeat is the answer to "is it
-  up, and on which address?" at any time
+  console opened later never shows it; this heartbeat answers "is it up, and on
+  which address?" at any time
   (`CONFIG_BROKER_STATUS_INTERVAL_S`, default 60 s, `0` silences it).
   `curl -u <user>:<pass> http://<ip>:8081/api/v4/brokers` answers the same
   question without the console.
@@ -413,10 +412,10 @@ uptime instead.  Zephyr has no timezone database, so displayed times are UTC.
   after a reset often begins with the tail of the boot before it, which is why
   you can see two `Powered by RT-Thread.` banners and two
   `*** Booting Zephyr OS ... ***` lines in one log.  That is not a reboot
-  loop — split the log on the **last** banner, or use
+  loop; split the log on the **last** banner, or use
   `tools/console.sh --drain <seconds>`.
 * **`--- N messages dropped ---`** between lines means the Zephyr log buffer
-  overflowed because the console (115200) cannot keep up — it happens when
+  overflowed because the console (115200) cannot keep up; it happens when
   something is printing in a loop (see below).  Data is not affected.
 * **A silent console right after flashing** usually means the core was left
   halted, not that the image is bad: pyocd leaves the target halted when its
@@ -427,7 +426,7 @@ uptime instead.  Zephyr has no timezone database, so displayed times are UTC.
   (KSO) sleep, and it is fixed: while asleep the device deliberately does not
   answer the first write that wakes it (WHD's source says so and ignores the
   error), and a host controller can only report that silence as a failed
-  command — ~300 of them a second.  The demo now keeps the chip awake
+  command, ~300 of them a second.  The example now keeps the chip awake
   (`CONFIG_AIROC_WIFI_DISABLE_POWERSAVE`), so those messages do not appear at
   all; the driver also rate-limits them, so a *real* burst still looks like
   this rather than a wall of text:
@@ -439,7 +438,7 @@ uptime instead.  Zephyr has no timezone database, so displayed times are UTC.
 
   The measurements and the decision are in
   [docs/adr/0004](docs/adr/0004-keep-the-art-pi-wifi-chip-awake.md).  A side
-  effect worth knowing from that episode: **`ping` can fail while TCP still
+  effect from that episode: **`ping` can fail while TCP still
   works** in a degraded link state, so judge the broker with
   `tools/verify.sh <ip>` (or `curl` on `:8081`), not with `ping`.
 * **Which variant is on the board?**  The log says so without ambiguity:
@@ -460,7 +459,7 @@ against the board (`--no-manage`, so the suite does not try to start qemu).
 Add `--full` for the WebSocket and capacity/robustness groups.
 
 The suite tunes itself to the hardware: it measures the TCP round trip and,
-for any non-loopback address, defaults to `--time-scale 4 --retry 2` —
+for any non-loopback address, defaults to `--time-scale 4 --retry 2`,
 needed because the CI scripts' sleeps assume localhost and two of their
 subtests are racy by construction.  On this bench the measured RTT is
 ~30–100 ms, so the stretched scale and the retry are what make `mqtt_v5`
@@ -479,7 +478,7 @@ RESULT: pass=3 fail=0
 ```
 
 Runs of the same gates on the earlier, instrumented build passed too
-(`mqtt_v5` took 235.8 s there, after one `retain-as-published` retry — that
+(`mqtt_v5` took 235.8 s there, after one `retain-as-published` retry; that
 subtest is racy by construction on this bench and the suite retries it).
 
 The **full** group set (adding the two WebSocket groups and the robustness
@@ -509,7 +508,7 @@ Link recovery was exercised on the bench as well: a temporary build (the hook
 was not committed) forced a disconnect 180 s into a run *and* left the
 disconnect event unregistered, so only the supervisor's status poll could
 notice.  It caught the loss 7 s later, re-associated, and leased the same
-address — the broker and its listeners never restarted.  The captured
+address; the broker and its listeners never restarted.  The captured
 sequence is in [the ART-Pi article](https://github.com/nanomq/nanomq/blob/zephyr-rtos/docs/en_US/tutorial/port-to-art-pi.md)
 §6.
 
@@ -517,7 +516,7 @@ sequence is in [the ART-Pi article](https://github.com/nanomq/nanomq/blob/zephyr
 
 | File | Purpose |
 | --- | --- |
-| [prj.conf](prj.conf) | The demo: POSIX API budget, net pools, SDRAM heap, REST + WebSocket listeners. |
+| [prj.conf](prj.conf) | The example: POSIX API budget, net pools, SDRAM heap, REST + WebSocket listeners. |
 | [wifi.conf](wifi.conf) | Wi-Fi build: AIROC/WHD + SDMMC2 host + Zephyr's Wi-Fi mgmt API, and the 43438 resource selection.  Pair with `boards/art_pi_wifi.overlay`. |
 | [eth.conf](eth.conf) | Ethernet variant (no Wi-Fi overlay).  Unverified here; see above. |
 | [usb.conf](usb.conf) | USB-ECM variant (board is the USB device and the DHCP server for that link).  Pair with `boards/art_pi_usb.overlay`; see above. |
@@ -541,7 +540,7 @@ sequence is in [the ART-Pi article](https://github.com/nanomq/nanomq/blob/zephyr
   root-caused and fixed by keeping the chip awake
   ([docs/adr/0004](docs/adr/0004-keep-the-art-pi-wifi-chip-awake.md)), and the
   driver rate-limits the message in case a real one appears.  If it ever does
-  reappear in bulk, `CONFIG_AIROC_WIFI_DISABLE_POWERSAVE` is the first thing
+  reappear in bulk, `CONFIG_AIROC_WIFI_DISABLE_POWERSAVE` is the first setting
   to check.
 * Wi-Fi link recovery is polled, not event-driven: the supervisor asks the
   driver for its join state every `CONFIG_BROKER_WIFI_MONITOR_PERIOD_S`
@@ -556,7 +555,7 @@ sequence is in [the ART-Pi article](https://github.com/nanomq/nanomq/blob/zephyr
   build.  Internal SRAM is at ~88 % in that configuration and the forwarder
   needs more room; make room in the SRAM budget (or move a pool) before
   enabling it.  `prj.conf` therefore keeps it off.
-* The CLM in use is the AW-CU427-P module's — the only one published for this
+* The CLM in use is the AW-CU427-P module's: it is the only one published for this
   part.  The link works and the chip accepts it, but it is not this module's
   calibration data.
 * Internal SRAM is at 87 % in the Wi-Fi build (the Wi-Fi link supervisor's
@@ -571,14 +570,15 @@ sequence is in [the ART-Pi article](https://github.com/nanomq/nanomq/blob/zephyr
 
 * [the ART-Pi article](https://github.com/nanomq/nanomq/blob/zephyr-rtos/docs/en_US/tutorial/port-to-art-pi.md)
   ([中文](https://github.com/nanomq/nanomq/blob/zephyr-rtos/docs/zh_CN/tutorial/port-to-art-pi.md))
-  — the porting record, in nanomq's docs: what differs from the ESP32-S3
+  The porting record, in nanomq's docs: what differs from the ESP32-S3
   sibling, in what order the traps appeared, and the evidence for each.
-* [docs/adr/](docs/adr/) — the decision records: QSPI XIP, the SDRAM heap, why
+* [docs/adr/](docs/adr/): the decision records, covering QSPI XIP, the SDRAM
+  heap, why
   Wi-Fi polls instead of being interrupted, why the Wi-Fi chip is kept awake,
   and why a lost Wi-Fi link is noticed by polling the join state.
-* [../nanomq_zephyr_esp32s3/README.md](../nanomq_zephyr_esp32s3/README.md) —
+* [../nanomq_zephyr_esp32s3/README.md](../nanomq_zephyr_esp32s3/README.md):
   the sibling this example is derived from (PSRAM, ESP-IDF tooling, webhook).
 * [the Zephyr port tutorial](https://github.com/nanomq/nanomq/blob/zephyr-rtos/docs/en_US/tutorial/port-to-zephyr.md)
-  — the general article, in nanomq's docs.
-* [GLOSSARY.md](../../GLOSSARY.md) — the vocabulary used in these docs
+  the general article in nanomq's docs.
+* [GLOSSARY.md](../../GLOSSARY.md): the vocabulary used in these docs
   (example, ART-Pi factory bootloader, broker heap, …).

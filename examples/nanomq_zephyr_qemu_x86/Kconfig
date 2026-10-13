@@ -1,4 +1,4 @@
-# NanoMQ broker demo options
+# NanoMQ broker example options
 #
 # An application-level Kconfig file replaces the top of the Zephyr tree
 # (kconfig.cmake: KCONFIG_ROOT = <app>/Kconfig when it exists), so the
@@ -61,7 +61,7 @@ config BROKER_WEBHOOK_URL
 	  end with a path the receiver serves ("/" is fine).
 
 	  Left empty by default: main.c enables the forwarder only when this
-	  is non-empty, and it is deliberately off in both demos — see the
+	  is non-empty, and it is deliberately off in both examples — see the
 	  BROKER_WEBHOOK help above.
 
 	  qemu_x86: 10.0.2.2 is the SLIRP alias for the machine running qemu,

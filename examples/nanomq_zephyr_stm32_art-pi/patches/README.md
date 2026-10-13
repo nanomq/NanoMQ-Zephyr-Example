@@ -1,6 +1,6 @@
-# Out-of-tree patches for the ART-Pi demo
+# Out-of-tree patches for the ART-Pi example
 
-The demo builds against stock Zephyr 4.4 plus three deltas that live outside
+The example builds against stock Zephyr 4.4 plus three deltas that live outside
 this repository — in the Zephyr tree itself and in one west module.  They are
 kept here as patches because they cannot travel on this repository's branches.
 
@@ -54,7 +54,7 @@ has the measurements.
 
 * `drivers/wifi/infineon/airoc_whd_hal_sdio.c` — the WHD thread poke timer,
   the workaround for the never-asserted card interrupt, behind
-  `CONFIG_AIROC_WIFI_WHD_POKE` (the demo's `wifi.conf` enables it).  Without
+  `CONFIG_AIROC_WIFI_WHD_POKE` (the example's `wifi.conf` enables it).  Without
   it WHD's worker thread is never woken and every ioctl times out.  Also
   keeps the chip out of its KSO sleep (`CONFIG_AIROC_WIFI_DISABLE_POWERSAVE`):
   a sleeping device deliberately does not answer the write that wakes it,
@@ -68,7 +68,7 @@ has the measurements.
   * `CONFIG_AIROC_WIFI_WHD_DEBUG` (`WPRINT_ENABLE_WHD_DEBUG`, which also
     compiles in `whd_bus_sdio_verify_resource()` — the post-download readback
     of the firmware/CLM transfer).
-  Both are app-level Kconfig symbols, defined in the demo's `Kconfig`.
+  Both are app-level Kconfig symbols, defined in the example's `Kconfig`.
 `CONFIG_AIROC_WIFI_WHD_POKE` is defined there too, for the same reason.
 
 ### 0003 — west module `hal_infineon`
@@ -83,11 +83,11 @@ has the measurements.
   another module's calibration file would have been the wrong way to say so.
 
 The firmware blob itself is *not* part of any patch: fetching it is what
-`west blobs fetch hal_infineon` is for.  The demo uses it unchanged.
+`west blobs fetch hal_infineon` is for.  The example uses it unchanged.
 
 ## In-repo changes (branch `alvin/art-pi`)
 
-* the demo directory itself (`examples/nanomq_zephyr_stm32_art-pi/`),
+* the example directory itself (`examples/nanomq_zephyr_stm32_art-pi/`),
 * `examples/nanomq_zephyr_qemu_x86/function_test.py` — the non-localhost heuristic
   (non-loopback address ⇒ `--time-scale 4 --retry 2`), so the suite is usable
   against a board on the LAN,

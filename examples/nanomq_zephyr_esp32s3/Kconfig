@@ -1,4 +1,4 @@
-# NanoMQ broker demo options
+# NanoMQ broker example options
 #
 # An application-level Kconfig file replaces the top of the Zephyr tree
 # (kconfig.cmake: KCONFIG_ROOT = <app>/Kconfig when it exists), so the
@@ -72,14 +72,14 @@ config BROKER_WS
 	  app's CMakeLists via NNG_TRANSPORT_MQTT_BROKER_WS=ON).  On the board
 	  the listener is reached directly over Wi-Fi at the address DHCP
 	  handed out — there is no SLIRP host forward here (that is the qemu
-	  demo).  TLS is built out of the Zephyr NanoNNG, so WSS stays inert.
+	  example).  TLS is built out of the Zephyr NanoNNG, so WSS stays inert.
 
 config BROKER_WIFI_SSID
 	string "Wi-Fi SSID (STA mode)"
 	depends on WIFI_ESP32
 	default ""
 	help
-	  SSID of the 2.4 GHz access point the demo connects to.  Meant to be
+	  SSID of the 2.4 GHz access point the example connects to.  Meant to be
 	  set from a local, git-ignored conf file (see local.conf.example) so
 	  real credentials never land in the tree.
 
