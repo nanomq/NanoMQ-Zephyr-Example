@@ -1,0 +1,14 @@
+# The nanomq revision this repository builds against.
+#
+# scripts/fetch-nanomq.sh reads REPO and REF from this file; examples/cmake/
+# nanomq_dependency.cmake then compiles <checkout>/nanomq and <checkout>/nng.
+# Keep it pinned to a commit rather than a branch: nanomq moves, and an example
+# that silently follows it can stop building.
+#
+# Bump REF when a newer nanomq is verified against the examples here, and update
+# VERIFIED.  NNG is informational — it is the nng submodule commit REF records,
+# which the fetch script checks out along with it.
+REPO=https://github.com/nanomq/nanomq.git
+REF=c8507485
+NNG=98cd115e
+VERIFIED=2026-10-13

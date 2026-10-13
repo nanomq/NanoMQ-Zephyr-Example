@@ -1,0 +1,15 @@
+# nanomq checkout fetched by scripts/fetch-nanomq.sh
+extern/
+
+# Local build directories
+build/
+build*/
+
+# Site-specific configuration (Wi-Fi credentials, REST credentials, webhook URLs)
+local.conf
+
+# Byte-compiled flash/verify helpers
+__pycache__/
+
+# Vendor QSPI flash algorithm (fetched from the ART-Pi SDK, not redistributed)
+examples/nanomq_zephyr_stm32_art-pi/tools/ART-Pi_W25Q64.FLM
